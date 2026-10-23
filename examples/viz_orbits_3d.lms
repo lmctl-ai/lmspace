@@ -1,0 +1,69 @@
+# Four classic Earth orbits from their classical elements: low equatorial, ISS-like (51.6 deg), sun-synchronous
+# (97.8 deg) and GPS (55 deg, 26560 km). elements() -> to_state() -> RK45 for exactly one period
+# each; the script asserts every orbit closes. The Earth is a wireframe sphere of 6378 km.
+# Output: images/orbits_3d.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let el_o1 = elements(7000.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+let st_o1 = el_o1.to_state(mu);
+let earth_o1 = space.body("earth", mu);
+let sat_o1 = space.body("sat", 0.000000000001, st_o1.position().x(), st_o1.position().y(), st_o1.position().z(), st_o1.velocity().x(), st_o1.velocity().y(), st_o1.velocity().z());
+let o_o1 = space.system().add(earth_o1).add(sat_o1).propagate(period(7000.0, mu), 300, 2.0, "rk45", 0.000000000001);
+assert_close(o_o1.get(299, 7), o_o1.get(0, 7), 0.01);
+o_o1.save_csv("build/examples/orbit3d_o1.csv");
+let el_o2 = elements(6780.0, 0.0005, 0.9006, 0.0, 0.0, 0.0);
+let st_o2 = el_o2.to_state(mu);
+let earth_o2 = space.body("earth", mu);
+let sat_o2 = space.body("sat", 0.000000000001, st_o2.position().x(), st_o2.position().y(), st_o2.position().z(), st_o2.velocity().x(), st_o2.velocity().y(), st_o2.velocity().z());
+let o_o2 = space.system().add(earth_o2).add(sat_o2).propagate(period(6780.0, mu), 300, 2.0, "rk45", 0.000000000001);
+assert_close(o_o2.get(299, 7), o_o2.get(0, 7), 0.01);
+o_o2.save_csv("build/examples/orbit3d_o2.csv");
+let el_o3 = elements(7178.0, 0.001, 1.7069, 1.0, 0.0, 0.0);
+let st_o3 = el_o3.to_state(mu);
+let earth_o3 = space.body("earth", mu);
+let sat_o3 = space.body("sat", 0.000000000001, st_o3.position().x(), st_o3.position().y(), st_o3.position().z(), st_o3.velocity().x(), st_o3.velocity().y(), st_o3.velocity().z());
+let o_o3 = space.system().add(earth_o3).add(sat_o3).propagate(period(7178.0, mu), 300, 2.0, "rk45", 0.000000000001);
+assert_close(o_o3.get(299, 7), o_o3.get(0, 7), 0.01);
+o_o3.save_csv("build/examples/orbit3d_o3.csv");
+let el_o4 = elements(26560.0, 0.0, 0.9599, 0.5, 0.0, 0.0);
+let st_o4 = el_o4.to_state(mu);
+let earth_o4 = space.body("earth", mu);
+let sat_o4 = space.body("sat", 0.000000000001, st_o4.position().x(), st_o4.position().y(), st_o4.position().z(), st_o4.velocity().x(), st_o4.velocity().y(), st_o4.velocity().z());
+let o_o4 = space.system().add(earth_o4).add(sat_o4).propagate(period(26560.0, mu), 300, 2.0, "rk45", 0.000000000001);
+assert_close(o_o4.get(299, 7), o_o4.get(0, 7), 0.01);
+o_o4.save_csv("build/examples/orbit3d_o4.csv");
+end _dsl_
+savedsl(sim, "build/viz_orbits_3d-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_orbits_3d-sim.dslb;
+assert(r.code == 0);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/orbits_3d.png", 1000, 760);
+plot.cmd("set datafile separator ','");
+plot.cmd("set title 'Four Earth orbits from classical elements (lmspace)'");
+plot.cmd("set xlabel 'x [1000 km]'");
+plot.cmd("set ylabel 'y [1000 km]'");
+plot.cmd("set zlabel 'z [1000 km]'");
+plot.cmd("set view equal xyz");
+plot.cmd("set view 60,40");
+plot.cmd("set key outside right center");
+plot.cmd("set grid");
+plot.cmd("set ticslevel 0");
+plot.cmd("set lmargin at screen 0.05");
+plot.cmd("set rmargin at screen 0.72");
+plot.cmd("set xrange [-28:28]");
+plot.cmd("set yrange [-28:28]");
+plot.cmd("set zrange [-28:28]");
+plot.cmd("set parametric");
+plot.cmd("set urange [0:2*pi]");
+plot.cmd("set vrange [-pi/2:pi/2]");
+plot.cmd("set isosamples 24,12");
+plot.cmd("splot 6.378*cos(u)*cos(v), 6.378*sin(u)*cos(v), 6.378*sin(v) with lines lc rgb '#9ecae1' notitle, 'build/examples/orbit3d_o1.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#1f77b4' title 'LEO equatorial', 'build/examples/orbit3d_o2.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#2ca02c' title 'ISS-like, 51.6 deg', 'build/examples/orbit3d_o3.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#ff7f0e' title 'sun-synchronous, 97.8 deg', 'build/examples/orbit3d_o4.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#d62728' title 'GPS, 55 deg'");
+plot.close();
+end _dsl_
+savedsl(draw, "build/orbits_3d-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/orbits_3d-draw.dslb;
+assert(r.code == 0);
+println("wrote images/orbits_3d.png");

@@ -9,7 +9,8 @@ case "$UNAME_S" in MINGW*|MSYS*|CYGWIN*) HOST="$HOST.exe";; esac
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/lmspace-test-XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 # Native Windows tools (node, the host) cannot address git-bash /tmp or /d/a paths.
-case "$UNAME_S" in MINGW*|MSYS*|CYGWIN*) WORK="$(cd "$WORK" && pwd -W | tr '\134' '/')";; esac
+ROOT="$HERE"
+case "$UNAME_S" in MINGW*|MSYS*|CYGWIN*) WORK="$(cd "$WORK" && pwd -W | tr '\134' '/')"; ROOT="$(pwd -W | tr '\134' '/')";; esac
 pass=0
 ok(){ pass=$((pass+1)); echo "ok $pass - $1"; }
 fail(){ echo "FAIL: $*" >&2; exit 1; }
@@ -61,31 +62,60 @@ case "$UNAME_S" in
   *) ok "static-link check skipped on $UNAME_S";;
 esac
 
-# Programs: compile every test and example, run them (they assert their own numbers).
-mkdir -p build/examples
+# Programs under tests/: compile to bytecode and run (they assert their own numbers).
+mkdir -p build
 n=0
-for src in tests/*.lms examples/*.lms; do
+for src in tests/*.lms; do
   name="$(basename "$src" .lms)"
   "$LMSCRIPT" "$src" "build/$name.dslb" >"$WORK/$name.log" 2>&1 || { cat "$WORK/$name.log" >&2; fail "$name compile"; }
-  n=$((n+1))
-done
-ok "$n programs compile as bytecode v5"
-for src in tests/*.lms examples/*.lms; do
-  name="$(basename "$src" .lms)"
   "$HOST" --dsl "build/$name.dslb" >"$WORK/$name.out" 2>"$WORK/$name.err" || { cat "$WORK/$name.out" "$WORK/$name.err" >&2; fail "$name run"; }
   grep -q '"ok": true' "$WORK/$name.out" || { cat "$WORK/$name.out" >&2; fail "$name did not report ok"; }
+  n=$((n+1))
 done
-ok "$n programs run and pass their own assertions"
+ok "$n test programs compile as bytecode v5, run and pass their own assertions"
 
-# Determinism: the CSV files the examples write are identical on rerun.
-for f in build/examples/*.csv; do echo "$(sha "$f") $f"; done >"$WORK/before.txt"
-for src in examples/*.lms; do
-  name="$(basename "$src" .lms)"
-  "$HOST" --dsl "build/$name.dslb" >/dev/null 2>&1 || fail "$name rerun"
+# Gallery: every image the README references exists and is a valid PNG/GIF; every linked example exists.
+img_ok() { # file
+  head -c 8 "$1" | od -An -tx1 | tr -d ' \n' | grep -q '^89504e470d0a1a0a' && return 0
+  head -c 6 "$1" | grep -q '^GIF8' && return 0
+  return 1
+}
+gal=0
+for img in $(grep -oE 'docs/images/[A-Za-z0-9_.-]+\.(png|gif)' README.md | sort -u); do
+  [ -s "$img" ] || fail "README references missing image $img"
+  img_ok "$img" || fail "$img is not a valid PNG/GIF"
+  [ "$(wc -c <"$img")" -le 3145728 ] || fail "$img is larger than 3 MB"
+  gal=$((gal+1))
 done
-for f in build/examples/*.csv; do echo "$(sha "$f") $f"; done >"$WORK/after.txt"
-cmp -s "$WORK/before.txt" "$WORK/after.txt" || fail "result files differ on rerun"
-ok "all $(wc -l <"$WORK/after.txt" | tr -d ' ') result files are byte-identical on rerun"
+for ex in $(grep -oE 'examples/[A-Za-z0-9_/.-]+\.lms' README.md | sort -u); do
+  [ -f "$ex" ] || fail "README links missing example $ex"
+done
+ok "README gallery: $gal images exist and are valid, linked examples exist"
+
+# Examples are self-contained: each runs its own computation, draws with lmplot and writes images/ and
+# build/ under the current directory. They need lmplot (on PATH or installable), so skip loudly without it.
+if command -v lmplot >/dev/null 2>&1 || [ "${LMSPACE_TEST_NETWORK:-}" = 1 ]; then
+  EXDIR="$WORK/exrun"; mkdir -p "$EXDIR"
+  n=0
+  for src in examples/*.lms; do
+    name="$(basename "$src" .lms)"
+    (cd "$EXDIR" && "$LMSCRIPT" "$ROOT/$src") >"$WORK/$name.log" 2>&1 || { cat "$WORK/$name.log" >&2; fail "$name example"; }
+    n=$((n+1))
+  done
+  imgs=0
+  for f in "$EXDIR"/images/*.png; do [ -s "$f" ] && img_ok "$f" || fail "example image $f missing or not a PNG"; imgs=$((imgs+1)); done
+  ok "$n examples ran by themselves (compute, draw) and wrote $imgs valid PNGs"
+  for f in "$EXDIR"/build/examples/*.csv; do echo "$(sha "$f") $(basename "$f")"; done >"$WORK/before.txt"
+  for src in examples/*.lms; do
+    (cd "$EXDIR" && "$LMSCRIPT" "$ROOT/$src") >/dev/null 2>&1 || fail "$src rerun"
+  done
+  for f in "$EXDIR"/build/examples/*.csv; do echo "$(sha "$f") $(basename "$f")"; done >"$WORK/after.txt"
+  cmp -s "$WORK/before.txt" "$WORK/after.txt" || fail "result files differ on rerun"
+  ok "all $(wc -l <"$WORK/after.txt" | tr -d ' ') result files are byte-identical on rerun"
+else
+  echo "SKIPPED: examples (no lmplot on PATH and LMSPACE_TEST_NETWORK unset): images were not regenerated"
+  ok "examples skipped loudly (no lmplot, LMSPACE_TEST_NETWORK unset)"
+fi
 
 # Error paths: each snippet must fail the run with exit 3 and a message naming the problem.
 expect_error() { # name, snippet, expected message fragment
@@ -117,10 +147,18 @@ expect_error badtol 'assert_close(1.0, 1.0, -0.1);' "assert_close"
 ok "errors stop with exit 3 and clear messages (13 cases)"
 
 # Dry run loads/verifies bytecode without executing numerical work or writing CSV.
-rm -f build/examples/orbit.csv
-"$HOST" --dry-run --dsl build/orbit_csv.dslb >"$WORK/dry.out" || fail "dry run"
-[ ! -e build/examples/orbit.csv ] || fail "dry run created CSV"
-"$HOST" --dsl build/orbit_csv.dslb >/dev/null || fail "restore example CSV"
+cat >"$WORK/dry.lms" <<LMS
+p = _dsl_ cli="lmspace";
+let out = space.system().add(space.body("a", 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0)).add(space.body("b", 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0)).propagate(1.0, 5, 0.01, "rk45", 0.000000001);
+out.save_csv("$WORK/dry.csv");
+end _dsl_
+savedsl(p, "$WORK/dry.dslb");
+LMS
+"$LMSCRIPT" "$WORK/dry.lms" >/dev/null 2>&1 || fail "dry-run program compile"
+"$HOST" --dry-run --dsl "$WORK/dry.dslb" >"$WORK/dry.out" || fail "dry run"
+[ ! -e "$WORK/dry.csv" ] || fail "dry run created CSV"
+"$HOST" --dsl "$WORK/dry.dslb" >/dev/null || fail "dry program run"
+[ -s "$WORK/dry.csv" ] || fail "real run wrote no CSV"
 ok "dry run verifies without writing outputs"
 
 for flags in '--unknown' '--version extra' '--dsl-schema --bogus' '--dry-run' '--dsl --bogus'; do
