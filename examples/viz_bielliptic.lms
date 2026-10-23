@@ -1,0 +1,68 @@
+# Hohmann or bi-elliptic? Total delta-v to go from a circular orbit of radius 1 to a circular orbit of radius R, in units of
+# the circular speed at radius 1. The Hohmann transfer is cheapest for R < 11.94; beyond R = 15.58 any bi-elliptic transfer
+# beats it, and between the two it depends on how far out the intermediate apoapsis rb goes. Everything is built from
+# lmspace's hohmann(): one call for each leg, the burn at rb is the difference of the two apoapsis speeds. The script
+# asserts the textbook crossovers (Hohmann wins at R = 10, a far bi-elliptic wins at R = 14) before lmplot draws them.
+# Output: images/bielliptic.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+for (k in range(0, 96)) {
+  let big = 2.0 + 0.4 * float(k);
+  let hh = hohmann(1.0, big, 1.0);
+  let hoh = abs(hh.get(0, 0)) + abs(hh.get(0, 1));
+  let line = str(big) + " " + str(hoh);
+  for (m in range(0, 3)) {
+    let rb = 15.0;
+    if (m == 1) { rb = 30.0; }
+    if (m == 2) { rb = 200.0; }
+    if (rb > big) {
+      let a = hohmann(1.0, rb, 1.0);
+      let b = hohmann(big, rb, 1.0);
+      let total = abs(a.get(0, 0)) + abs(abs(a.get(0, 1)) - abs(b.get(0, 1))) + abs(b.get(0, 0));
+      line = line + " " + str(total);
+    } else {
+      line = line + " ?";
+    }
+  }
+  print(line);
+}
+let h10 = hohmann(1.0, 10.0, 1.0);
+let a10 = hohmann(1.0, 200.0, 1.0);
+let b10 = hohmann(10.0, 200.0, 1.0);
+let bi10 = abs(a10.get(0, 0)) + abs(abs(a10.get(0, 1)) - abs(b10.get(0, 1))) + abs(b10.get(0, 0));
+assert_close(clamp((bi10 - abs(h10.get(0, 0)) - abs(h10.get(0, 1))) * 100000.0, 0.0, 1.0), 1.0, 0.0);   # Hohmann cheaper at R = 10
+let h14 = hohmann(1.0, 14.0, 1.0);
+let a14 = hohmann(1.0, 200.0, 1.0);
+let b14 = hohmann(14.0, 200.0, 1.0);
+let bi14 = abs(a14.get(0, 0)) + abs(abs(a14.get(0, 1)) - abs(b14.get(0, 1))) + abs(b14.get(0, 0));
+assert_close(clamp((abs(h14.get(0, 0)) + abs(h14.get(0, 1)) - bi14) * 100000.0, 0.0, 1.0), 1.0, 0.0);   # a far bi-elliptic cheaper at R = 14
+assert_close(abs(h10.get(0, 0)) + abs(h10.get(0, 1)), 0.5298, 0.0005);
+end _dsl_
+savedsl(sim, "build/viz_bielliptic-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_bielliptic-sim.dslb;
+if (r.code != 0) { println(r.stderr); println(r.stdout); }
+assert(r.code == 0);
+write_file("build/examples/bielliptic.txt", r.stdout);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/bielliptic.png", 950, 580);
+plot.cmd("set datafile missing '?'");
+plot.cmd("set title 'Hohmann against bi-elliptic transfers (lmspace)'");
+plot.cmd("set xlabel 'radius ratio R of the two circular orbits'");
+plot.cmd("set ylabel 'total delta-v [circular speed at radius 1]'");
+plot.cmd("set grid");
+plot.cmd("set key bottom right box opaque");
+plot.cmd("set xrange [2:40]");
+plot.cmd("set yrange [0.4:0.6]");
+plot.cmd("set arrow 1 from 11.94,0.4 to 11.94,0.6 nohead dt 3 lc rgb 'gray40'");
+plot.cmd("set arrow 2 from 15.58,0.4 to 15.58,0.6 nohead dt 3 lc rgb 'gray40'");
+plot.cmd("set label 1 '11.94' at 11.94,0.405 center");
+plot.cmd("set label 2 '15.58' at 15.58,0.405 center");
+plot.cmd("plot 'build/examples/bielliptic.txt' every ::0::95 using 1:2 with lines lw 3 lc rgb '#d62728' title 'Hohmann', '' every ::0::95 using 1:3 with lines lw 2 lc rgb '#1f77b4' title 'bi-elliptic, rb = 15', '' every ::0::95 using 1:4 with lines lw 2 lc rgb '#2ca02c' title 'rb = 30', '' every ::0::95 using 1:5 with lines lw 2 lc rgb '#9467bd' title 'rb = 200'");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_bielliptic-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_bielliptic-draw.dslb;
+assert(r.code == 0);
+println("wrote images/bielliptic.png");
