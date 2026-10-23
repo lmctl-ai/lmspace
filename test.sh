@@ -47,6 +47,7 @@ ok "--dsl-schema --json prints byte-identical embedded schema bytes"
 diff -u <("$LMSCRIPT" --dsl-signatures schema/lmspace.dsl.json) <("$HOST" --dsl-signatures) || fail "host/compiler signatures differ"
 ok "host registry matches compiler signatures"
 "$HOST" --notices | grep -q "NAIF" || fail "--notices missing third-party text"
+"$HOST" --notices | grep -q "Lucent Technologies" || fail "--notices missing the libf2c notice"
 ok "--notices prints the third-party license texts"
 
 case "$UNAME_S" in
