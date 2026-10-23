@@ -1,0 +1,98 @@
+# Orbit geometry from the numbers: an orbit with semi-major axis a = 1, eccentricity e = 0.6 and a body at true anomaly
+# 50 degrees. lmspace turns the classical elements into a Cartesian state (elements().to_state()), propagates the
+# body once around (RK45) and converts the state back (to_elements); the script asserts that the elements survive the
+# round trip and that r = a (1 - e^2) / (1 + e cos nu). lmdraw then draws the ellipse, the focus, the centre, a, b, a e,
+# the true anomaly and the velocity vector, all from the computed state.
+# Output: images/orbit_elements.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("build/rendered");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let nu = 0.8726646259971648;
+let el = elements(1.0, 0.6, 0.0, 0.0, 0.0, nu);
+let st = el.to_state(1.0);
+let back = to_elements(st, 1.0);
+assert_close(back.a(), 1.0, 0.000001);
+assert_close(back.e(), 0.6, 0.000001);
+assert_close(back.nu(), nu, 0.000001);
+let r = sqrt(st.position().x() * st.position().x() + st.position().y() * st.position().y());
+assert_close(r, 0.64 / (1.0 + 0.6 * cos(nu)), 0.000001);
+let sun = space.body("sun", 1.0);
+let here = space.body("here", 0.000000000001, st.position().x(), st.position().y(), 0.0, st.velocity().x(), st.velocity().y(), 0.0);
+space.system().add(sun).add(here).propagate(0.0, 2, 0.1, "rk45", 0.000000001).save_csv("build/examples/elements_point.csv");
+let peri = elements(1.0, 0.6, 0.0, 0.0, 0.0, 0.0).to_state(1.0);
+let walker = space.body("walker", 0.000000000001, peri.position().x(), 0.0, 0.0, 0.0, peri.velocity().y(), 0.0);
+space.system().add(sun).add(walker).propagate(6.283185307179586, 241, 0.01, "rk45", 0.0000000001).save_csv("build/examples/elements_orbit.csv");
+end _dsl_
+savedsl(sim, "build/viz_orbit_elements-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_orbit_elements-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+
+hdr = "t,sx,sy,sz,svx,svy,svz,x,y,z,vx,vy,vz\n";
+pt = csv_parse(hdr + read_file("build/examples/elements_point.csv"));
+m0 = pt.get(0, null);
+px = m0.get("x", 0.0);
+py = m0.get("y", 0.0);
+pvx = m0.get("vx", 0.0);
+pvy = m0.get("vy", 0.0);
+orb = csv_parse(hdr + read_file("build/examples/elements_orbit.csv"));
+FX = 620.0;
+FY = 320.0;
+SC = 230.0;
+ellipse = "";
+for (k in range(0, orb.len())) {
+  mk = orb.get(k, null);
+  ellipse = ellipse + sprintf("%.1f,%.1f ", FX + SC * mk.get("x", 0.0), FY - SC * mk.get("y", 0.0));
+}
+pxs = FX + SC * px + 0.0001;
+pys = FY - SC * py + 0.0001;
+vxs = pxs + 45.0 * pvx;
+vys = pys - 45.0 * pvy;
+rr = sqrt(px * px + py * py);
+speed = sqrt(pvx * pvx + pvy * pvy);
+cx = FX - SC * 0.6 + 0.0001;
+arc_end_x = FX + 70.0 * 0.6427876096865394 + 0.0001;
+arc_end_y = FY - 70.0 * 0.766044443118978 + 0.0001;
+arcpath = sprintf("M %.1f,%.1f A 70 70 0 0 0 %.1f,%.1f", FX + 70.0, FY, arc_end_x, arc_end_y);
+tl_r = sprintf("r = %.3f", rr);
+tl_v = sprintf("v = %.3f", speed);
+tl_vv = sprintf("vis-viva: sqrt(2/r - 1/a) = %.3f", sqrt(2.0 / rr - 1.0));
+tl_nu = "true anomaly 50 deg";
+
+d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+scene.canvas(900, 560, "#0f1720");
+scene.text(40.0, 44.0, 24.0, "One orbit, in numbers: a = 1, e = 0.6", "#e6edf3").set_attr("font-weight", "700");
+scene.text(40.0, 72.0, 14.0, "Every length, angle and vector below was computed by lmspace (elements, Cartesian state, RK45 orbit).", "#9fb3c8");
+scene.polyline(${ellipse}, "#4fa3ff", 3.0);
+scene.line(230.0, 320.0, 800.0, 320.0, "#33475b", 1.0);
+scene.line(482.0, 320.0, 712.0, 320.0, "#ffd166", 3.0);
+scene.line(482.0, 320.0, 482.0, 136.0, "#7bd88f", 3.0);
+scene.line(482.0, 336.0, 620.0, 336.0, "#c792ea", 3.0);
+scene.circle(620.0, 320.0, 8.0, "#f5c16c");
+scene.circle(482.0, 320.0, 4.0, "#9fb3c8");
+scene.circle(712.0, 320.0, 5.0, "#e6edf3");
+scene.circle(252.0, 320.0, 5.0, "#e6edf3");
+scene.text(597.0, 349.0, 13.0, "focus", "#f5c16c");
+scene.text(470.0, 349.0, 13.0, "centre", "#9fb3c8").set_attr("text-anchor", "end");
+scene.text(551.0, 360.0, 13.0, "a e = 0.6 (centre to focus)", "#c792ea").set_attr("text-anchor", "middle");
+scene.text(535.0, 308.0, 14.0, "a = 1", "#ffd166").set_attr("text-anchor", "middle");
+scene.text(470.0, 160.0, 14.0, "b = a sqrt(1 - e^2) = 0.8", "#7bd88f").set_attr("text-anchor", "end");
+scene.text(718.0, 306.0, 13.0, "periapsis r = a (1 - e) = 0.4", "#e6edf3");
+scene.text(246.0, 306.0, 13.0, "apoapsis r = a (1 + e) = 1.6", "#e6edf3");
+scene.line(620.0, 320.0, ${pxs}, ${pys}, "#ff6b6b", 2.0).set_attr("stroke-dasharray", "6 4");
+scene.path(${arcpath}, "none", "#ff6b6b", 2.0);
+scene.text(712.0, 282.0, 13.0, ${tl_nu}, "#ff6b6b");
+scene.arrow(${pxs}, ${pys}, ${vxs}, ${vys}, "#7bd88f", 3.0);
+scene.circle(${pxs}, ${pys}, 7.0, "#ff6b6b");
+scene.text(${pxs} + 14.0, ${pys} + 4.0, 13.0, ${tl_r}, "#ff6b6b");
+scene.text(${vxs} + 12.0, ${vys} + 2.0, 13.0, ${tl_v}, "#7bd88f");
+scene.text(${vxs} + 12.0, ${vys} + 18.0, 12.0, ${tl_vv}, "#9fb3c8");
+scene.render_png("build/rendered/orbit_elements.png", 900, 560, 1);
+end _dsl_
+savedsl(d, "build/viz_orbit_elements-draw.dslb");
+r = system ${dsl_cli(d)} --dsl build/viz_orbit_elements-draw.dslb;
+if (r.code != 0) { println(r.stderr); }
+assert(r.code == 0);
+copy_file("build/rendered/orbit_elements.png", "images/orbit_elements.png");
+println("wrote images/orbit_elements.png");
