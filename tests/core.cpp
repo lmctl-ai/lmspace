@@ -55,6 +55,17 @@ int main() {
     Elements eb = to_elements(from_elements(eq, mu), mu);
     check(close(eb.argp + eb.raan, .8, 1e-8) && close(eb.nu, eq.nu, 1e-8),
           "equatorial periapsis longitude");
+    for (double eccentricity : {0.0, 0.4}) {
+      State original =
+          from_elements({2, eccentricity, 3.141592653589793, 0.3, 0.5, 1.1}, 1);
+      State restored = from_elements(to_elements(original, 1), 1);
+      check(mag(delta(original.r, restored.r)) < 1e-10 &&
+                mag(delta(original.v, restored.v)) < 1e-10,
+            "retrograde equatorial state roundtrip");
+    }
+    State weak = from_elements({2, .1, .2, .3, .4, .5}, 0.000000000000001);
+    check(close(to_elements(weak, 0.000000000000001).a, 2, 1e-10),
+          "elements scale-independent binding energy");
     Matrix h = hohmann(1, 2, mu);
     check(close(h.get(0, 0), std::sqrt(4.0 / 3.0) - 1, 1e-12) &&
               close(h.get(0, 1), 1 / std::sqrt(2.0) - std::sqrt(1.0 / 3.0),

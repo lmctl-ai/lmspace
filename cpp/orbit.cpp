@@ -208,15 +208,17 @@ Elements to_elements(State s, double mu) {
   double nn = norm(n);
   Vec3 evec = sub(mul(cross(s.v, h), 1 / mu), mul(s.r, 1 / r));
   double e = norm(evec), energy2 = v * v / 2 - mu / r;
-  double a = std::abs(energy2) < 1e-14 ? std::numeric_limits<double>::infinity()
-                                       : -mu / (2 * energy2);
+  double a = std::abs(energy2) < 8 * std::numeric_limits<double>::epsilon() *
+                                     (v * v / 2 + mu / r)
+                 ? std::numeric_limits<double>::infinity()
+                 : -mu / (2 * energy2);
   double inc = std::acos(std::clamp(h.z / hn, -1.0, 1.0)),
          raan = nn < EPS ? 0 : positive_angle(std::atan2(n.y, n.x)), argp = 0,
          nu = 0;
   if (e >= EPS) {
     argp =
         nn < EPS
-            ? positive_angle(std::atan2(evec.y, evec.x))
+            ? positive_angle((h.z < 0 ? -1 : 1) * std::atan2(evec.y, evec.x))
             : positive_angle(std::atan2(dot(cross(n, evec), h) / (nn * e * hn),
                                         dot(n, evec) / (nn * e)));
     nu = positive_angle(std::atan2(dot(cross(evec, s.r), h) / (e * r * hn),
@@ -225,7 +227,7 @@ Elements to_elements(State s, double mu) {
     nu = positive_angle(std::atan2(dot(cross(n, s.r), h) / (nn * r * hn),
                                    dot(n, s.r) / (nn * r)));
   else
-    nu = positive_angle(std::atan2(s.r.y, s.r.x));
+    nu = positive_angle((h.z < 0 ? -1 : 1) * std::atan2(s.r.y, s.r.x));
   return {a, e, inc, raan, argp, nu};
 }
 
