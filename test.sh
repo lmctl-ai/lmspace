@@ -148,6 +148,40 @@ expect_error nan_assert 'assert_close(sqrt(-1.0), 0.0, 0.1);' "assert_close"
 expect_error badtol 'assert_close(1.0, 1.0, -0.1);' "assert_close"
 ok "errors stop with exit 3 and clear messages (14 cases)"
 
+# Memory budget: a runaway loop of large propagation tables stops with a run error (exit 3, message
+# on stderr and in the JSON line) instead of exhausting the machine. A small budget everywhere; on
+# Linux also the default 4096 MiB under a 6 GiB address-space limit (ulimit only here, never in the host).
+cat >"$WORK/runaway.lms" <<LMS
+p = _dsl_ cli="lmspace";
+let s = space.system();
+let k = 0;
+while (k < 16) {
+  s.add(space.body("b", 1.0, 1.0 + float(k), 0.0, 0.0, 0.0, 1.0, 0.0));
+  k = k + 1;
+}
+let i = 0;
+while (i < 1000000) {
+  let m = s.propagate(0.0, 1000000, 1.0, "symplectic", 0.000001);
+  i = i + 1;
+}
+end _dsl_
+savedsl(p, "$WORK/runaway.dslb");
+LMS
+"$LMSCRIPT" "$WORK/runaway.lms" >/dev/null || fail "runaway.lms compile"
+set +e; out="$(LMSPACE_MAX_MEMORY_MB=64 "$HOST" --dsl "$WORK/runaway.dslb" 2>"$WORK/runaway.err")"; code=$?; set -e
+[ "$code" = 3 ] || fail "runaway loop under LMSPACE_MAX_MEMORY_MB=64: exit $code, expected 3 ($out)"
+echo "$out" | grep -q "memory budget exceeded" || fail "runaway loop: JSON lacks the budget message: $out"
+grep -q "LMSPACE_MAX_MEMORY_MB" "$WORK/runaway.err" || fail "runaway loop: no budget message on stderr"
+set +e; LMSPACE_MAX_MEMORY_MB=-5 "$HOST" --dsl "$WORK/runaway.dslb" >/dev/null 2>"$WORK/badenv.err"; code=$?; set -e
+[ "$code" = 2 ] && grep -q "positive whole number" "$WORK/badenv.err" || fail "bad LMSPACE_MAX_MEMORY_MB: exit $code"
+if [ "$UNAME_S" = Linux ]; then
+  set +e; out="$(ulimit -v 6291456; "$HOST" --dsl "$WORK/runaway.dslb" 2>/dev/null)"; code=$?; set -e
+  [ "$code" = 3 ] && echo "$out" | grep -q "limit 4096 MiB" || fail "runaway loop with the default budget under ulimit -v 6 GiB: exit $code ($out)"
+  ok "memory budget: runaway loop stops at 64 MiB and at the default 4096 MiB (under ulimit -v 6 GiB)"
+else
+  ok "memory budget: runaway loop stops at LMSPACE_MAX_MEMORY_MB=64 (default-budget run is Linux-only)"
+fi
+
 # Dry run loads/verifies bytecode without executing numerical work or writing CSV.
 cat >"$WORK/dry.lms" <<LMS
 p = _dsl_ cli="lmspace";

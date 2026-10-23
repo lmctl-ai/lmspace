@@ -8,3 +8,4 @@
 - [06-ci.md](06-ci.md): five-platform builds and tagged releases.
 - [07-examples.md](07-examples.md): runnable physics examples and CSV exchange.
 - [08-open-items.md](08-open-items.md): remaining scope.
+- [09-resource-limits.md](09-resource-limits.md): total memory budget (`LMSPACE_MAX_MEMORY_MB`) and how it is counted.

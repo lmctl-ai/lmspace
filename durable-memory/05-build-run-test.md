@@ -3,7 +3,7 @@
 Measured 2026-10-23 on x86_64 Linux with GCC and Clang.
 
 - Fully static stripped Linux executable: approximately 4.0 MB (3.81 MiB); `ldd` reports no dynamic executable. CSPICE is linked from its pinned C sources; no astronomy kernels are needed at build time.
-- `./test.sh`: 17 grouped checks, two native suites, six DSL programs (four tests and two examples), two deterministic CSV files and thirteen runtime error cases. All pass locally with GCC; a full Clang build also passed.
+- `./test.sh`: 18 grouped checks (including the memory-budget runaway), two native suites, six DSL programs (four tests and two examples), two deterministic CSV files and thirteen runtime error cases. All pass locally with GCC; a full Clang build also passed.
 - The numerical suite currently reports 42 always-active checks (including Release/NDEBUG). It tests elliptic/hyperbolic/parabolic Kepler equations, period, element degeneracies, full-vector two-body closure, zero-revolution Lambert endpoints over short/long flight times, Hohmann impulses, Earth–Moon scale, RK45 accuracy, energy/angular momentum conservation and tiny output timesteps, and near-parabolic elliptic/hyperbolic anomalies.
 - The SPICE suite reports 13 checks: built-in frames, missing kernel and ephemeris errors, failure recovery, runtime generation/loading of an original synthetic degree-one SPK, its six state components and kernel clearing. A second generated SPK fixture exercises the entire DSL ephemeris path.
 - Sanitized native numerical tests pass under AddressSanitizer and UndefinedBehaviorSanitizer. Clang static analysis of our numerical implementation and shellcheck of all scripts pass. Python schema generation compiles and registry/compiler/embedded schema parity passes.

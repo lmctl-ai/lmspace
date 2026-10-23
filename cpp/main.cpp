@@ -1,5 +1,6 @@
 // lmspace: orbital mechanics and astronomy scripting host.
 #include "dslvm.hpp"
+#include "memory_budget.hpp"
 #include "notices_embedded.hpp"
 #include "orbit.hpp"
 #include "schema_embedded.hpp"
@@ -128,6 +129,15 @@ int points(int64_t count) {
     throw dslvm::Error("propagation grid points must be in [2,1000000]");
   return static_cast<int>(count);
 }
+// Check the budget for a propagation table before integrating (rows x (1 + 6 bodies) doubles);
+// sizes over propagate()'s own 1e8-cell cap are left to its clearer message.
+int grid(int64_t count, size_t bodies) {
+  const int rows = points(count);
+  const size_t cells = static_cast<size_t>(rows) * (1 + 6 * bodies);
+  if (bodies <= 10000 && cells <= 100000000)
+    membudget::require(cells * sizeof(double));
+  return rows;
+}
 std::string fmt(double x) {
   char b[48];
   std::snprintf(b, sizeof b, "%.17g", x);
@@ -170,7 +180,7 @@ void register_host(dslvm::Registry &r, Host &h) {
           std::vector<Body> b;
           for (const auto &x : P(p).bodies)
             b.push_back(*x);
-          return h.matrix(lmspace::propagate(b, a[0].f, points(a[1].i), a[2].f,
+          return h.matrix(lmspace::propagate(b, a[0].f, grid(a[1].i, b.size()), a[2].f,
                                              a[3].s, a[4].f));
         });
   check(r, "Space", "energy", {}, "float", [](void *p, Args &) {
@@ -212,7 +222,7 @@ void register_host(dslvm::Registry &r, Host &h) {
   check(r, "System", "propagate", {"float", "int", "float", "string", "float"},
         "Matrix", [&h](void *p, Args &a) {
           auto *s = static_cast<System *>(p);
-          return h.matrix(lmspace::propagate(s->bodies, a[0].f, points(a[1].i),
+          return h.matrix(lmspace::propagate(s->bodies, a[0].f, grid(a[1].i, s->bodies.size()),
                                              a[2].f, a[3].s, a[4].f));
         });
   check(r, "System", "energy", {}, "float", [](void *p, Args &) {
@@ -348,7 +358,10 @@ void register_host(dslvm::Registry &r, Host &h) {
 }
 const char *usage =
     "usage: lmspace --version | --notices | --dsl-schema "
-    "[--json] | --dsl-signatures | [--dry-run] --dsl FILE [FILE ...]\n";
+    "[--json] | --dsl-signatures | [--dry-run] --dsl FILE [FILE ...]\n"
+    "environment: LMSPACE_MAX_MEMORY_MB  total memory budget in MiB (default 4096); a program that "
+    "needs more\n"
+    "             stops with a run error (exit 3) instead of allocating\n";
 } // namespace
 
 int main(int argc, char **argv) {
@@ -416,6 +429,10 @@ int main(int argc, char **argv) {
     std::cerr << usage;
     return 2;
   }
+  if (!membudget::configure("lmspace", "LMSPACE_MAX_MEMORY_MB")) {
+    std::cerr << usage;
+    return 2;
+  }
   const std::string schema(
       reinterpret_cast<const char *>(lmspace::embedded_schema),
       lmspace::embedded_schema_size);
@@ -429,6 +446,8 @@ int main(int argc, char **argv) {
           dslvm::Program::load(dslvm::read_file(file), schema, reg));
     } catch (const dslvm::Error &e) {
       return dslvm::report_error("load", e);
+    } catch (const std::exception &e) {
+      return dslvm::report_error("load", dslvm::Error(e.what()));
     }
   if (dry) {
     dslvm::report_ok();
@@ -439,6 +458,8 @@ int main(int argc, char **argv) {
       p.run(ctx, reg);
     } catch (const dslvm::Error &e) {
       return dslvm::report_error("run", e);
+    } catch (const std::exception &e) { // budget exceeded inside the VM
+      return dslvm::report_error("run", dslvm::Error(e.what()));
     }
     dslvm::report_ok();
   }
