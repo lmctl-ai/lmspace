@@ -19,7 +19,7 @@
 #include <io.h>
 #endif
 #ifndef LMSPACE_VERSION
-#define LMSPACE_VERSION "0.1.0"
+#define LMSPACE_VERSION "0.1.1"
 #endif
 
 namespace {
