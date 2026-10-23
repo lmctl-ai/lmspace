@@ -1,0 +1,58 @@
+# Earth to Mars "porkchop" plot: delta-v of every Lambert transfer between circular coplanar orbits (Earth at 1 AU,
+# Mars at 1.524 AU) over one synodic period of departure dates (centred on the Hohmann launch window, Mars 44.7 degrees ahead) and flight times of 150 to 450 days. lambert() solves each
+# of the 40 x 31 transfers; the script asserts that the cheapest one costs about the Hohmann 5.6 km/s and takes about
+# 260 days, then lmplot draws the heat map.
+# Output: images/porkchop.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let am = 1.524;
+let wm = pow(am, -1.5);
+let phase = 0.78;
+let best = 100.0;
+let best_tof = 0.0;
+for (i in range(0, 40)) {
+  let td = -6.7 + 13.4 * float(i) / 39.0;
+  for (j in range(0, 31)) {
+    let tof = 2.6 + 0.17 * float(j);
+    let ta = td + tof;
+    let r1 = vector(cos(td), sin(td), 0.0);
+    let r2 = vector(am * cos(phase + wm * ta), am * sin(phase + wm * ta), 0.0);
+    let l = lambert(r1, r2, tof, 1.0, true);
+    let dv1x = l.get(0, 0) + sin(td);
+    let dv1y = l.get(0, 1) - cos(td);
+    let sm = sqrt(1.0 / am);
+    let dv2x = l.get(1, 0) + sm * sin(phase + wm * ta);
+    let dv2y = l.get(1, 1) - sm * cos(phase + wm * ta);
+    let dv = (sqrt(dv1x * dv1x + dv1y * dv1y) + sqrt(dv2x * dv2x + dv2y * dv2y)) * 29.78;
+    if (dv < best) { best = dv; best_tof = tof; }
+    print(str(td * 58.13) + " " + str(tof * 58.13) + " " + str(dv));
+  }
+  print("");
+}
+assert_close(best, 5.6, 0.5);
+assert_close(best_tof * 58.13, 260.0, 40.0);
+end _dsl_
+savedsl(sim, "build/viz_porkchop-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_porkchop-sim.dslb;
+assert(r.code == 0);
+write_file("build/examples/porkchop.txt", r.stdout);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/porkchop.png", 950, 600);
+plot.cmd("set title 'Earth to Mars: total delta-v of every Lambert transfer (lmspace)'");
+plot.cmd("set xlabel 'departure date [days from the Hohmann launch window]'");
+plot.cmd("set ylabel 'flight time [days]'");
+plot.cmd("set cblabel 'delta-v [km/s]'");
+plot.cmd("set pm3d map interpolate 4,4");
+plot.cmd("set palette defined (0 '#08306b', 0.2 '#2171b5', 0.4 '#6baed6', 0.6 '#fee08b', 0.8 '#f46d43', 1 '#a50026')");
+plot.cmd("set cbrange [5.5:14]");
+plot.cmd("set xrange [-390:390]");
+plot.cmd("set yrange [150:450]");
+plot.cmd("splot 'build/examples/porkchop.txt' every 1:1:0:0:30:39 using 1:2:3 with pm3d notitle");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_porkchop-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_porkchop-draw.dslb;
+assert(r.code == 0);
+println("wrote images/porkchop.png");
