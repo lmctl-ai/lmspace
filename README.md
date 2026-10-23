@@ -3,24 +3,49 @@
 **Orbital mechanics for lmscript: N-body integration, Kepler, Lambert and Hohmann, SPICE frames, in one static executable.**
 
 [![CI](https://github.com/lmctl-ai/lmspace/actions/workflows/ci.yml/badge.svg)](https://github.com/lmctl-ai/lmspace/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-| ![figure_eight](docs/images/figure_eight.png) | ![hohmann](docs/images/hohmann.png) |
+### Many bodies and Kepler orbits
+
+| ![viz_figure_eight](docs/images/figure_eight.png) | ![anim_figure_eight](docs/images/figure_eight.gif) |
 | --- | --- |
-| Figure-eight three-body orbit: three equal masses on one curve.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_figure_eight.lms` | Hohmann transfer from low orbit to geostationary radius, burns and flight time from `hohmann()`.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_hohmann.lms` |
+| The figure-eight three-body orbit: three equal masses chase each other on one curve.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_figure_eight.lms` | The same orbit, animated (needs ffmpeg).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/anim_figure_eight.lms` |
 
-| ![orbits_3d](docs/images/orbits_3d.png) | ![lambert](docs/images/lambert.png) |
+| ![viz_trojans](docs/images/trojans.png) | ![orbit_csv](docs/images/binary_orbit.png) |
 | --- | --- |
-| Four Earth orbits from classical elements: equatorial, ISS-like, sun-synchronous, GPS.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbits_3d.lms` | Lambert arcs between two fixed points for five flight times.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lambert.lms` |
+| Trojan asteroids librate around Jupiter's L4 point in the rotating frame.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_trojans.lms` | Equal-mass binary, one period, closed form checked.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/orbit_csv.lms` |
 
-| ![second_law](docs/images/second_law.png) | ![energy_error](docs/images/energy_error.png) |
+| ![viz_halley](docs/images/halley.png) | ![viz_second_law](docs/images/second_law.png) |
 | --- | --- |
-| Kepler second law: 24 equal time steps sweep 24 equal areas.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_second_law.lms` | Energy error over 50 eccentric orbits: leapfrog vs adaptive RK45.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_energy_error.lms` |
+| Halley's comet: 75 years, 54.5 km/s at perihelion, 0.9 km/s at aphelion.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_halley.lms` | Kepler's second law: 24 equal time steps sweep 24 equal areas.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_second_law.lms` |
 
-| ![binary_orbit](docs/images/binary_orbit.png) | ![hohmann_sweep](docs/images/hohmann_sweep.png) |
+### Transfers
+
+| ![viz_hohmann](docs/images/hohmann.png) | ![transfers](docs/images/hohmann_sweep.png) |
 | --- | --- |
-| Equal-mass binary, one period, closed form checked.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/orbit_csv.lms` | Hohmann delta-v and flight time against target radius; Lambert check.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/transfers.lms` |
+| Hohmann transfer from low orbit to geostationary radius.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_hohmann.lms` | Hohmann delta-v and flight time against target radius; Lambert check.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/transfers.lms` |
 
-Every picture is made by the script named under it: the script runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot) and writes `images/` into the current directory. `examples/render-all.sh` regenerates `docs/images/`.
+| ![viz_bielliptic](docs/images/bielliptic.png) | ![viz_lambert](docs/images/lambert.png) |
+| --- | --- |
+| Hohmann against bi-elliptic transfers: the textbook crossovers at 11.94 and 15.58.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_bielliptic.lms` | Lambert arcs between two fixed points for five flight times.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lambert.lms` |
+
+| ![viz_porkchop](docs/images/porkchop.png) | |
+| --- | --- |
+| Earth to Mars porkchop plot: delta-v of 1900 Lambert transfers.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_porkchop.lms` | |
+
+### Geometry and numerics
+
+| ![viz_orbits_3d](docs/images/orbits_3d.png) | ![viz_orbit_elements](docs/images/orbit_elements.png) |
+| --- | --- |
+| Four Earth orbits from classical elements: equatorial, ISS-like, sun-synchronous, GPS.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbits_3d.lms` | One orbit in numbers: a, b, a e, true anomaly and velocity from lmspace (lmdraw).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbit_elements.lms` |
+
+| ![viz_energy_error](docs/images/energy_error.png) | |
+| --- | --- |
+| Energy error over 50 eccentric orbits: leapfrog against adaptive RK45.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_energy_error.lms` | |
+
+Every picture is made by the script named under it: it runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot) or [lmdraw](https://github.com/lmctl-ai/lmdraw) and writes `images/` into the current directory. `examples/render-all.sh` regenerates `docs/images/`.
+
+**Quick start:** `npm i -g @lmctl-ai/lmctl`, then paste any `lmctl autorun` line above into a terminal; it downloads lmspace and the drawing host and writes the picture to `images/`.
 
 Orbital mechanics and astronomy for lmscript in one static executable. Original MIT numerical algorithms provide N-body integration, Kepler propagation, orbital elements, Lambert transfers and Hohmann maneuvers. NASA NAIF CSPICE provides frames and ephemerides from user-supplied kernels.
 

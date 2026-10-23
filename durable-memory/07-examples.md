@@ -11,28 +11,38 @@ The DSL compiler does not accept scientific notation in literal floats. Use expl
 
 Physical reference: JPL's [astrodynamic parameters](https://ssd.jpl.nasa.gov/astro_par.html) publish DE440 gravitational parameters. The ideal two-body Earth–Moon period at 384400 km is about 27.28 days; real lunar sidereal motion differs due to perturbations. NASA's [Moon facts](https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html) give the physical orbital scale. Transfer checks use vis-viva and the circular speed closed forms; see JPL [orbital mechanics](https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG%20Book/Release/Chapter7-OrbitalMechanics.pdf).
 
-## Pictures (VISUALS.md)
+## Pictures
 
-README starts with a gallery of 8 PNGs in `docs/images/` (~900 px, each <= 300 KB). Every image is made by a
+The README opens with 14 images in `docs/images/` (13 PNG + 1 GIF), grouped by theme. Every image is made by a
 self-contained example: `lmctl autorun <raw url>` in an empty directory runs the computation
-(`system ${dsl_cli(sim)} --dsl ...`), draws with lmplot (a second `_dsl_` block) and writes
-`images/<name>.png` plus scratch files under `build/`. `examples/render-all.sh` runs them all with `docs/`
-as the working directory to refresh `docs/images/`.
+(`system ${dsl_cli(sim)} --dsl ...`), draws with lmplot or lmdraw and writes `images/<name>.png` plus scratch files under
+`build/`. `examples/render-all.sh` runs all of them with `docs/` as the working directory.
 
-| example | image | what it checks |
+| example | picture | story and check |
 | --- | --- | --- |
-| `viz_figure_eight.lms` | figure_eight | the figure-eight choreography closes after one period (RK45, 1e-12) |
-| `viz_hohmann.lms` | hohmann | transfer ellipse reaches GEO radius, arrival speed plus burn 2 = circular speed |
-| `viz_orbits_3d.lms` | orbits_3d | elements -> state -> one period closes for four Earth orbits |
-| `viz_lambert.lms` | lambert | propagating each Lambert departure velocity lands on the target with the predicted arrival velocity |
-| `viz_second_law.lms` | second_law | angular momentum equal at 24 samples, back at perigee after a period |
-| `viz_energy_error.lms` | energy_error | leapfrog error bounded and ~dt^2, RK45 error follows its tolerance |
-| `orbit_csv.lms` | binary_orbit | existing binary closed-form assertions |
-| `transfers.lms` | hohmann_sweep | existing Hohmann/Lambert assertions + a printed sweep fed to `plot.data` |
+| `viz_figure_eight`, `anim_figure_eight` | figure_eight.png/.gif | the figure-eight choreography closes after one period (RK45, 1e-12); lmdraw frames + ffmpeg GIF |
+| `viz_trojans` | trojans.png | three asteroids near L4 stay at Jupiter's radius within 10 % for 24 Jupiter years; drawn in the rotating frame |
+| `orbit_csv` | binary_orbit.png | equal-mass binary closed form |
+| `viz_halley` | halley.png | period 75.3 yr, perihelion speed 54.5 km/s (vis-viva), speed on a log axis |
+| `viz_second_law` | second_law.png | angular momentum equal at 24 samples |
+| `viz_hohmann`, `transfers` | hohmann.png, hohmann_sweep.png | arrival at GEO radius; delta-v and flight time sweep |
+| `viz_bielliptic` | bielliptic.png | Hohmann cheaper at R = 10 (0.5298), far bi-elliptic cheaper at R = 14; crossovers 11.94 and 15.58 |
+| `viz_lambert` | lambert.png | each Lambert departure velocity lands on the target |
+| `viz_porkchop` | porkchop.png | 40 x 31 Lambert transfers Earth to Mars; minimum 5.6 +- 0.5 km/s at 260 +- 40 days |
+| `viz_orbits_3d` | orbits_3d.png | four Earth orbits close after one period |
+| `viz_orbit_elements` | orbit_elements.png | elements -> state -> elements round trip, r = a(1-e^2)/(1+e cos nu); lmdraw geometry diagram |
+| `viz_energy_error` | energy_error.png | leapfrog vs RK45 energy error |
 
-Notes: the propagate tolerance must be > 0 even for `"symplectic"`; the RK45 `step` is an upper bound, not the
-output spacing; a title containing an apostrophe breaks the gnuplot command; scalars computed in a sweep can
-leave the host as printed lines in `r.stdout` and enter lmplot with `plot.data` (use `every ::0::N-1` to skip the
-trailing JSON status line). `test.sh` checks the gallery (PNG/GIF magic, <= 3 MB, linked examples exist), runs
-all examples in a scratch directory when lmplot is available (`LMSPACE_TEST_NETWORK=1` or on PATH, else prints
-`SKIPPED`) and compares the CSVs of a second run byte for byte.
+How the hosts talk: a sweep prints one line per case with `print`; lmscript saves `r.stdout`; lmplot reads the file with
+`every ::0::N` (skips the JSON status line) and `set datafile missing '?'` for gaps. lmspace's `save_csv` has no header;
+lmscript prepends one before `csv_parse`. `Matrix` output of a zero-duration propagate (`propagate(0.0, 2, ...)`) is the
+way to get a state out as a CSV row. lmscript has no trig (hard-code cos/sin of fixed angles, or use Taylor `fn`s);
+`${x}` substitutes an integral number as an int literal, so add `+ 0.0001` where the DSL wants a float. The DSL has no
+`assert`: use `assert_close` (and `clamp(diff * 1e5, 0, 1)` for inequalities). lmdraw may only write under
+`build/rendered/` (copy_file to `images/`), its `end _dsl_` line must start at column 1, and `plot.data` truncates long strings.
+Notes: propagate tolerance must be > 0 even for `"symplectic"`; the RK45 `step` is an upper bound; an apostrophe in a
+gnuplot title breaks the command.
+
+`test.sh` checks the gallery (PNG/GIF magic, <= 3 MB, linked examples exist), runs the examples in a scratch directory
+when lmplot is available (`LMSPACE_TEST_NETWORK=1`; the anim example is skipped loudly without ffmpeg) and compares the
+CSVs of a second run byte for byte.
