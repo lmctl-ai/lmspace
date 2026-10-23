@@ -71,6 +71,7 @@ Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or instal
 | `system.propagate(duration, points, step, method, tol)` | matrix with time and six Cartesian columns per body |
 | `space.propagate(...)` | propagate all bodies created in this script context |
 | `space.energy()`, `space.angular_momentum()` | invariants of the initial body states |
+| `system.energy_drift()`, `space.energy_drift()` | largest relative energy change of the last `propagate` (needs v0.1.2) |
 | `vector(x,y,z)`, `state(position,velocity)` | vector and Cartesian state objects |
 | `elements(a,e,i,raan,argp,nu).to_state(mu)` | state from classical orbital elements |
 | `to_elements(state,mu)`, `body.elements(central_mu)` | classical orbital elements |
@@ -78,7 +79,7 @@ Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or instal
 | `kepler(M,e)`, `period(a,mu)` | eccentric anomaly and orbital period |
 | `hohmann(r1,r2,mu)` | 1×3 matrix: signed departure delta-v, arrival delta-v, transfer time |
 | `lambert(r1,r2,dt,mu,prograde)` | 2×3 matrix: departure and arrival velocities |
-| `space.load_kernel(path)` | load an explicit user-provided SPICE kernel or metakernel |
+| `space.load_kernel(path)` | load an explicit user-provided SPICE kernel or metakernel; a file that is neither a binary (DAF/DAS) kernel nor a text kernel with `\begindata` is rejected (from v0.1.2) |
 | `space.ephemeris(target,observer,frame,et)` | 1×6 geometric state matrix in km and km/s |
 | `space.frame(from,to,et)` | 3×3 coordinate rotation matrix |
 | `space.time(text)` | SPICE ephemeris time; UTC conversion requires a leap-second kernel |
@@ -87,7 +88,7 @@ Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or instal
 
 Angles are radians. Numerical mechanics accepts any consistent units; `mu` is G×mass, not mass in kg. With km and seconds, use km³/s² for `mu`. N-body energy and angular momentum use `mu` as mass, equivalent to G=1; their conservation is meaningful, while physical mass-weighted units require dividing by G. Propagation returns `points` rows, from t=0 to duration, with columns `t, x0,y0,z0,vx0,vy0,vz0, x1,...`. It returns a trajectory and leaves the initial bodies unchanged.
 
-Choose `"symplectic"` for second-order kick–drift–kick leapfrog or `"rk45"` for adaptive Dormand–Prince 5(4). Leapfrog uses the requested maximum step, shortening at output boundaries. RK45 uses `step` as its initial trial step and `tol` as absolute-plus-relative local error control. These are original implementations, **not WHFast or IAS15**. No REBOUND code is used. Lambert supports the zero-revolution branch; collinear endpoints are rejected. Parabolic element-based propagation is not supported.
+Choose `"symplectic"` for second-order kick–drift–kick leapfrog or `"rk45"` for adaptive Dormand–Prince 5(4). Leapfrog uses the requested maximum step, shortening at output boundaries. RK45 uses `step` as its initial trial step and `tol` as absolute-plus-relative local error control. These are original implementations, **not WHFast or IAS15**. Every propagation tracks the mass-weighted system energy; when it drifts by more than 1e-3 of its scale (a fixed step through a close encounter, say), lmspace prints a warning on stderr and `energy_drift()` returns the value (from v0.1.2). Test particles with tiny `mu` hardly move the total, so check them against a known invariant yourself. No REBOUND code is used. Lambert supports the zero-revolution branch; collinear endpoints are rejected. Parabolic element-based propagation is not supported.
 
 SPICE uses ET seconds past J2000, with no aberration correction (`NONE`). Build and kernel-free frame transforms need no data files. Ephemeris queries require user kernels covering the target, observer and epoch; missing data produces an execution error. lmspace never automatically downloads kernels. Results can be exported as CSV and plotted with [lmplot](https://github.com/lmctl-ai/lmplot).
 

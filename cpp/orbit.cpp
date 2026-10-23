@@ -405,8 +405,21 @@ Vec3 angular_momentum(const std::vector<Body> &b) {
   return h;
 }
 
+double energy_scale(const std::vector<Body> &b) {
+  double s = 0;
+  for (const auto &x : b)
+    s += .5 * x.mu * dot(x.state.v, x.state.v);
+  for (size_t i = 0; i < b.size(); ++i)
+    for (size_t j = i + 1; j < b.size(); ++j) {
+      double r = norm(sub(b[i].state.r, b[j].state.r));
+      if (r >= EPS)
+        s += b[i].mu * b[j].mu / r;
+    }
+  return s;
+}
+
 Matrix propagate(std::vector<Body> b, double duration, int points, double step,
-                 const std::string &method, double tol) {
+                 const std::string &method, double tol, double *max_energy_drift) {
   if (b.empty())
     throw std::invalid_argument("propagation needs at least one body");
   if (points < 2 || points > 1000000 || !std::isfinite(duration) ||
@@ -440,10 +453,30 @@ Matrix propagate(std::vector<Body> b, double duration, int points, double step,
   out.data.resize(cells);
   double t = 0;
   int work = 0;
+  // Energy is sampled on at most ~256 output rows (plus the last) so the check
+  // stays cheap next to the integration itself.
+  const bool track = max_energy_drift != nullptr && n > 1;
+  const int stride = std::max(1, (points - 1) / 256);
+  const double e0 = track ? energy(b) : 0, scale = track ? energy_scale(b) : 0;
+  if (max_energy_drift)
+    *max_energy_drift = 0;
   auto emit = [&](int row) {
     out.data[row * out.cols] = t;
     for (int k = 0; k < 6 * n; ++k)
       out.data[row * out.cols + 1 + k] = y[k];
+    if (track && scale > 0 && (row % stride == 0 || row == points - 1)) {
+      std::vector<Body> now = b;
+      for (int i = 0; i < n; ++i)
+        now[i].state = State{{y[6 * i], y[6 * i + 1], y[6 * i + 2]},
+                             {y[6 * i + 3], y[6 * i + 4], y[6 * i + 5]}};
+      double drift;
+      try {
+        drift = std::abs(energy(now) - e0) / scale;
+      } catch (const std::domain_error &) {
+        drift = std::numeric_limits<double>::infinity();
+      }
+      *max_energy_drift = std::max(*max_energy_drift, drift);
+    }
   };
   emit(0);
   for (int row = 1; row < points; ++row) {

@@ -51,11 +51,31 @@ struct Host {
 };
 struct System {
   std::vector<Body> bodies;
+  double drift = 0; // relative energy drift of the last propagate()
 };
 struct Space {
   std::vector<std::unique_ptr<Body>> bodies;
   std::vector<std::unique_ptr<System>> systems;
+  double drift = 0;
 };
+
+// A fixed-step run through a close encounter (or a far too coarse step) returns
+// a wrong trajectory without failing; the energy drift exposes it.
+constexpr double kDriftWarning = 1e-3;
+Matrix checked_propagate(const std::vector<Body> &b, Args &a, int rows,
+                         double &drift) {
+  Matrix m = lmspace::propagate(b, a[0].f, rows, a[2].f, a[3].s, a[4].f, &drift);
+  if (drift > kDriftWarning) {
+    char line[256];
+    std::snprintf(line, sizeof line,
+                  "lmspace: warning: %s propagation changed the system energy by "
+                  "%.3g (relative); the trajectory is unreliable, use a smaller step "
+                  "or \"rk45\" (close encounter?)\n",
+                  a[3].s.c_str(), drift);
+    std::fputs(line, stderr);
+  }
+  return m;
+}
 
 template <class F> Value translate(F &&f) {
   try {
@@ -180,9 +200,10 @@ void register_host(dslvm::Registry &r, Host &h) {
           std::vector<Body> b;
           for (const auto &x : P(p).bodies)
             b.push_back(*x);
-          return h.matrix(lmspace::propagate(b, a[0].f, grid(a[1].i, b.size()), a[2].f,
-                                             a[3].s, a[4].f));
+          return h.matrix(checked_propagate(b, a, grid(a[1].i, b.size()), P(p).drift));
         });
+  check(r, "Space", "energy_drift", {}, "float",
+        [](void *p, Args &) { return Value::real(P(p).drift); });
   check(r, "Space", "energy", {}, "float", [](void *p, Args &) {
     std::vector<Body> b;
     for (const auto &x : P(p).bodies)
@@ -222,9 +243,12 @@ void register_host(dslvm::Registry &r, Host &h) {
   check(r, "System", "propagate", {"float", "int", "float", "string", "float"},
         "Matrix", [&h](void *p, Args &a) {
           auto *s = static_cast<System *>(p);
-          return h.matrix(lmspace::propagate(s->bodies, a[0].f, grid(a[1].i, s->bodies.size()),
-                                             a[2].f, a[3].s, a[4].f));
+          return h.matrix(checked_propagate(s->bodies, a, grid(a[1].i, s->bodies.size()),
+                                            s->drift));
         });
+  check(r, "System", "energy_drift", {}, "float", [](void *p, Args &) {
+    return Value::real(static_cast<System *>(p)->drift);
+  });
   check(r, "System", "energy", {}, "float", [](void *p, Args &) {
     return Value::real(lmspace::energy(static_cast<System *>(p)->bodies));
   });

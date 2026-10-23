@@ -44,6 +44,12 @@
             "returns": "Matrix"
           }
         ],
+        "energy_drift": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
         "energy": [
           {
             "params": [],
@@ -121,6 +127,12 @@
               "float"
             ],
             "returns": "Matrix"
+          }
+        ],
+        "energy_drift": [
+          {
+            "params": [],
+            "returns": "float"
           }
         ],
         "energy": [

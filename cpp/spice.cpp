@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cmath>
+#include <fstream>
 #include <mutex>
 #include <stdexcept>
 #include <vector>
@@ -46,7 +47,37 @@ void configure_errors() {
 }
 }  // namespace
 
+namespace {
+// CSPICE treats any file without a DAF/DAS binary header as a text kernel and
+// loads it without complaint even when it holds no data, so a wrong download
+// (an HTML error page, say) only failed at the next ephemeris call. Accept a
+// binary kernel by its ID word, and a text kernel or metakernel only when it
+// contains a \begindata section.
+void check_kernel_file(const std::string& path) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in) return;  // let furnsh_c report the missing file in its own words
+  char head[8] = {};
+  in.read(head, sizeof head);
+  const std::string id(head, static_cast<size_t>(in.gcount()));
+  if (id.rfind("DAF/", 0) == 0 || id.rfind("DAS/", 0) == 0 ||
+      id.rfind("NAIF/DAF", 0) == 0)
+    return;
+  in.clear();
+  in.seekg(0);
+  std::string text, chunk(1 << 16, '\0');
+  const std::string marker = "\\begindata";
+  while (in.read(&chunk[0], static_cast<std::streamsize>(chunk.size())) || in.gcount() > 0) {
+    text.append(chunk, 0, static_cast<size_t>(in.gcount()));
+    if (text.find(marker) != std::string::npos) return;
+    if (text.size() > marker.size()) text.erase(0, text.size() - marker.size());
+  }
+  throw std::runtime_error("load_kernel: " + path +
+                           " is not a SPICE kernel (no DAF/DAS header and no \\begindata section)");
+}
+}  // namespace
+
 void spice_load(const std::string& path) {
+  check_kernel_file(path);
   std::lock_guard<std::mutex> lock(spice_mutex);
   configure_errors();
   furnsh_c(path.c_str());

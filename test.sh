@@ -148,7 +148,35 @@ expect_error nobodies 'let x = space.system().propagate(1.0, 2, 0.1, "rk45", 0.0
 expect_error assertfail 'assert_close(1.0, 2.0, 0.1);' "assert_close"
 expect_error nan_assert 'assert_close(sqrt(-1.0), 0.0, 0.1);' "assert_close"
 expect_error badtol 'assert_close(1.0, 1.0, -0.1);' "assert_close"
-ok "errors stop with exit 3 and clear messages (14 cases)"
+printf 'this is an HTML error page, not a kernel\n' >"$WORK/garbage.tls"
+expect_error garbage_kernel "space.load_kernel(\"$WORK/garbage.tls\");" "not a SPICE kernel"
+ok "errors stop with exit 3 and clear messages (15 cases)"
+
+# Energy drift: a fixed-step leapfrog run through a close encounter used to return a wrong
+# trajectory silently. It still runs, but warns on stderr and energy_drift() reports it;
+# the same encounter under RK45 stays clean.
+cat >"$WORK/drift.lms" <<LMS
+p = _dsl_ cli="lmspace";
+let a = space.body("a", 1.0, -0.5, 0.0, 0.0, 0.0, -0.05, 0.0);
+let b = space.body("b", 1.0, 0.5, 0.0, 0.0, 0.0, 0.05, 0.0);
+let coarse = space.system().add(a).add(b);
+let x = coarse.propagate(2.0, 50, 0.05, "symplectic", 0.000001);
+print("coarse " + str(coarse.energy_drift()));
+let fine = space.system().add(a).add(b);
+let y = fine.propagate(2.0, 50, 0.001, "rk45", 0.000000000001);
+print("fine " + str(fine.energy_drift()));
+assert_close(fine.energy_drift(), 0.0, 0.000001);
+let z = space.propagate(2.0, 50, 0.001, "rk45", 0.000000000001);
+assert_close(space.energy_drift(), 0.0, 0.000001);
+end _dsl_
+savedsl(p, "$WORK/drift.dslb");
+LMS
+"$LMSCRIPT" "$WORK/drift.lms" >/dev/null 2>"$WORK/drift.cerr" || { cat "$WORK/drift.cerr" >&2; fail "drift compile"; }
+"$HOST" --dsl "$WORK/drift.dslb" >"$WORK/drift.out" 2>"$WORK/drift.err" || { cat "$WORK/drift.out" "$WORK/drift.err" >&2; fail "drift run"; }
+[ "$(grep -c 'lmspace: warning: symplectic propagation changed the system energy' "$WORK/drift.err")" = 1 ] \
+  || { cat "$WORK/drift.err" >&2; fail "close encounter: expected exactly one energy-drift warning"; }
+awk '$1 == "coarse" { exit !($2 > 0.001) }' "$WORK/drift.out" || fail "close encounter: energy_drift() too small: $(cat "$WORK/drift.out")"
+ok "close encounter under coarse leapfrog warns on stderr; RK45 drift < 1e-6 and silent"
 
 # Memory budget: a runaway loop of large propagation tables stops with a run error (exit 3, message
 # on stderr and in the JSON line) instead of exhausting the machine. A small budget everywhere; on
