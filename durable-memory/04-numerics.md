@@ -7,3 +7,5 @@ The symplectic option is fixed-step velocity Verlet (kick–drift–kick leapfro
 The RK option is adaptive Dormand–Prince 5(4), with local error control and a bounded work budget. It is useful for eccentric motion but does not preserve the symplectic structure. It is not IAS15.
 
 Kepler propagation and orbital elements use two-body point masses. Lambert solves the zero-revolution transfer branch. Perturbations, relativistic corrections, oblateness, tides, collisions and maneuver optimization are outside v0.1. All numbers use double precision. Tests compare closed forms and conserved quantities instead of bitwise comparisons between platforms; deterministic output is byte-compared on repeated runs of the same binary.
+
+Near e=1 and zero mean anomaly, the Kepler solver evaluates the linear term and the odd sine/sinh remainder separately. A small-argument series avoids subtracting nearly equal numbers; termination uses the anomaly correction rather than a fixed absolute equation residual. Regression cases include means as small as 1e-16 on either side of e=1.

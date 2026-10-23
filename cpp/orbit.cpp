@@ -114,51 +114,62 @@ double kepler(double M, double e) {
   if (!std::isfinite(M) || !(e >= 0) || !std::isfinite(e))
     throw std::invalid_argument(
         "Kepler inputs must be finite and eccentricity nonnegative");
-  if (e < 1.0) {
-    double x = wrap(M), lo = -PI, hi = PI, E = x;
-    for (int k = 0; k < 100; ++k) {
-      double f = E - e * std::sin(E) - x;
-      if (std::abs(f) < 1e-14)
-        return E;
-      if (f > 0)
-        hi = E;
-      else
-        lo = E;
-      double q = 1 - e * std::cos(E), next = E - f / q;
-      E = (next > lo && next < hi) ? next : .5 * (lo + hi);
-    }
-    throw std::runtime_error("elliptic Kepler solver did not converge");
-  }
-  if (e > 1.0) {
-    double H = std::asinh(M / e), lo = -std::max(1.0, std::abs(H) + 1),
-           hi = std::max(1.0, std::abs(H) + 1);
-    while (e * std::sinh(hi) - hi < M)
-      hi *= 2;
-    while (e * std::sinh(lo) - lo > M)
-      lo *= 2;
-    for (int k = 0; k < 100; ++k) {
-      double f = e * std::sinh(H) - H - M;
-      if (std::abs(f) < 1e-13 * (1 + std::abs(M)))
-        return H;
-      if (f > 0)
-        hi = H;
-      else
-        lo = H;
-      double next = H - f / (e * std::cosh(H) - 1);
-      H = (next > lo && next < hi) ? next : .5 * (lo + hi);
-    }
-    throw std::runtime_error("hyperbolic Kepler solver did not converge");
-  }
-  if (std::abs(M) < 1e-15)
+  if (M == 0)
     return 0;
-  double D = 2 * std::sinh(std::asinh(1.5 * M) / 3);
-  for (int k = 0; k < 50; ++k) {
-    double f = D + D * D * D / 3 - M;
-    if (std::abs(f) < 1e-14 * (1 + std::abs(M)))
-      return D;
-    D -= f / (1 + D * D);
+  if (e == 1) {
+    // Barker's equation D+D^3/3=M, including arbitrarily small nonzero M.
+    const double scaled_asinh =
+        std::abs(M) > 1e150 ? std::asinh(M) + std::copysign(std::log(1.5), M)
+                            : std::asinh(1.5 * M);
+    return 2 * std::sinh(scaled_asinh / 3);
   }
-  throw std::runtime_error("parabolic Kepler solver did not converge");
+  const bool hyperbolic = e > 1;
+  const double mean = hyperbolic ? M : wrap(M);
+  if (mean == 0)
+    return 0;
+  // Evaluating E-e*sin(E) directly loses precision close to e=1, E=0.
+  // Sum the small odd remainder separately from the linear term.
+  auto remainder = [hyperbolic](double x) {
+    if (std::abs(x) >= .1)
+      return hyperbolic ? std::sinh(x) - x : x - std::sin(x);
+    double term = x * x * x / 6, sum = term;
+    for (int n = 5; n <= 15; n += 2) {
+      term *= (hyperbolic ? 1 : -1) * x * x / ((n - 1) * n);
+      sum += term;
+    }
+    return sum;
+  };
+  auto equation = [&](double x) {
+    return (hyperbolic ? e - 1 : 1 - e) * x + e * remainder(x) - mean;
+  };
+  double lo = -PI, hi = PI, x = mean;
+  if (hyperbolic) {
+    x = std::asinh(mean / e);
+    hi = std::max(1.0, std::abs(x) + 1);
+    while (equation(hi) < 0)
+      hi *= 2;
+    lo = -hi;
+    while (equation(lo) > 0)
+      lo *= 2;
+  }
+  for (int k = 0; k < 150; ++k) {
+    const double f = equation(x);
+    const double half = hyperbolic ? std::sinh(x / 2) : std::sin(x / 2);
+    const double derivative =
+        (hyperbolic ? e - 1 : 1 - e) + 2 * e * half * half;
+    const double correction = f / derivative;
+    if (f == 0 ||
+        std::abs(correction) <= 8 * std::numeric_limits<double>::epsilon() *
+                                    std::max(std::abs(x), 1e-8))
+      return x;
+    if (f > 0)
+      hi = x;
+    else
+      lo = x;
+    const double next = x - correction;
+    x = (next > lo && next < hi && std::isfinite(next)) ? next : (lo + hi) / 2;
+  }
+  throw std::runtime_error("Kepler solver did not converge");
 }
 
 double period(double a, double mu) {

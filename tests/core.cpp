@@ -33,6 +33,21 @@ int main() {
     double md = kepler(.001, 1);
     check(close(md + md * md * md / 3, .001, 1e-12),
           "parabolic Kepler equation");
+    for (double eccentricity : {0.999999999999, 1.000000000001}) {
+      for (double mean : {1e-10, 1e-12, 1e-14, 1e-16, -1e-14}) {
+        const double anomaly = kepler(mean, eccentricity);
+        long double x = anomaly, term = x * x * x / 6, remainder = term;
+        for (int n = 5; n <= 15; n += 2) {
+          term *= (eccentricity > 1 ? 1 : -1) * x * x / ((n - 1) * n);
+          remainder += term;
+        }
+        long double residual =
+            std::abs(1.0L - eccentricity) * x + eccentricity * remainder - mean;
+        check(std::abs(residual) < std::abs(mean) * 1e-10,
+              "near-parabolic Kepler residual");
+      }
+    }
+    check(close(kepler(1e-16, 1), 1e-16, 1e-30), "tiny Barker anomaly");
     check(close(period(1, mu), 2 * 3.141592653589793), "Kepler period");
     Elements q{2, .4, .6, .3, .5, 1.1};
     State s = from_elements(q, mu);
