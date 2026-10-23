@@ -27,6 +27,13 @@ int main() {
           "circular zero mean anomaly");
     double m = kepler(.7, .2);
     check(close(m - .2 * std::sin(m), .7, 1e-11), "Kepler equation");
+    for (double mean : {7.0, -7.0, 100.0, 4 * 3.141592653589793}) {
+      const double anomaly = kepler(mean, .5);
+      check(close(anomaly - .5 * std::sin(anomaly), mean, 1e-12),
+            "Kepler equation beyond one revolution");
+    }
+    check(close(kepler(1, .5), 1.498701133517848, 1e-13),
+          "Kepler E for M=1, e=0.5");
     double mh = kepler(-3, 2.5);
     check(close(2.5 * std::sinh(mh) - mh, -3, 1e-11),
           "hyperbolic Kepler equation");

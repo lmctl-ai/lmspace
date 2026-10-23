@@ -125,8 +125,11 @@ double kepler(double M, double e) {
   }
   const bool hyperbolic = e > 1;
   const double mean = hyperbolic ? M : wrap(M);
+  // The elliptic equation is solved for the wrapped mean anomaly; adding the
+  // removed whole revolutions back keeps E - e sin(E) = M for any M.
+  const double turns = M - mean;
   if (mean == 0)
-    return 0;
+    return turns;
   // Evaluating E-e*sin(E) directly loses precision close to e=1, E=0.
   // Sum the small odd remainder separately from the linear term.
   auto remainder = [hyperbolic](double x) {
@@ -161,7 +164,7 @@ double kepler(double M, double e) {
     if (f == 0 ||
         std::abs(correction) <= 8 * std::numeric_limits<double>::epsilon() *
                                     std::max(std::abs(x), 1e-8))
-      return x;
+      return x + turns;
     if (f > 0)
       hi = x;
     else
@@ -404,7 +407,9 @@ Vec3 angular_momentum(const std::vector<Body> &b) {
 
 Matrix propagate(std::vector<Body> b, double duration, int points, double step,
                  const std::string &method, double tol) {
-  if (points < 2 || points > 1000000 || b.empty() || !std::isfinite(duration) ||
+  if (b.empty())
+    throw std::invalid_argument("propagation needs at least one body");
+  if (points < 2 || points > 1000000 || !std::isfinite(duration) ||
       duration < 0 || !std::isfinite(step) || step <= 0 ||
       !std::isfinite(tol) || tol <= 0)
     throw std::invalid_argument("invalid propagation grid or tolerance");
@@ -467,6 +472,8 @@ Matrix propagate(std::vector<Body> b, double duration, int points, double step,
           y[6 * i + 4] += .5 * h * d[6 * i + 4];
           y[6 * i + 5] += .5 * h * d[6 * i + 5];
         }
+        if (!finite_v(y))
+          throw std::runtime_error("symplectic numerical overflow");
         t += h;
       } else {
         V k1 = deriv(y, b), k2 = deriv(plus(y, k1, h * .2), b),

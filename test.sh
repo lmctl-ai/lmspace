@@ -141,10 +141,11 @@ expect_error badmethod 'let s = space.system(); s.add(space.body("a", 1.0)); let
 expect_error kernel 'space.load_kernel("does-not-exist.bsp");' "CSPICE"
 expect_error noephemeris 'let x = space.ephemeris("MOON", "EARTH", "J2000", 0.0);' "CSPICE"
 expect_error frame 'let x = space.frame("J2000", "INVALID_FRAME", 0.0);' "CSPICE"
+expect_error nobodies 'let x = space.system().propagate(1.0, 2, 0.1, "rk45", 0.000001);' "at least one body"
 expect_error assertfail 'assert_close(1.0, 2.0, 0.1);' "assert_close"
 expect_error nan_assert 'assert_close(sqrt(-1.0), 0.0, 0.1);' "assert_close"
 expect_error badtol 'assert_close(1.0, 1.0, -0.1);' "assert_close"
-ok "errors stop with exit 3 and clear messages (13 cases)"
+ok "errors stop with exit 3 and clear messages (14 cases)"
 
 # Dry run loads/verifies bytecode without executing numerical work or writing CSV.
 cat >"$WORK/dry.lms" <<LMS
