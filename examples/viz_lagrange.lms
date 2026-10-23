@@ -101,7 +101,6 @@ plot.cmd("set style line 1 lc rgb '#d62728' lw 2");
 plot.cmd("set style line 2 lc rgb '#ff7f0e' lw 2");
 plot.cmd("set style line 3 lc rgb '#2ca02c' lw 2");
 plot.cmd("set style line 4 lc rgb '#9467bd' lw 2");
-plot.cmd("set style increment user");
 plot.cmd("set table 'build/examples/zvc.dat'");
 plot.cmd("splot C(x,y) notitle");
 plot.cmd("unset table");

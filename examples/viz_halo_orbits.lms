@@ -118,7 +118,7 @@ plot.cmd("set size 0.55,0.93");
 plot.cmd("set title 'Rotating frame, 3D (1000 km from the Moon)'");
 plot.cmd("set view 62,28,1.15");
 plot.cmd("set view equal xyz");
-plot.cmd("set ticslevel 0");
+plot.cmd("set xyplane relative 0");
 plot.cmd("set grid");
 plot.cmd("set xlabel 'x'");
 plot.cmd("set ylabel 'y'");
