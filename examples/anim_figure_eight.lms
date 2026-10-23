@@ -1,0 +1,65 @@
+# Animation: the figure-eight three-body orbit. lmspace integrates one period (6.32591398, G = 1) with RK45 at 1e-12
+# and records all three bodies; lmscript walks through the CSV and has lmdraw draw 100 frames (the shared path, three
+# bodies, their velocity arrows); ffmpeg turns the frames into images/figure_eight.gif. Needs ffmpeg on PATH.
+# Output: images/figure_eight.gif   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("build/rendered");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let a = space.body("a", 1.0, -0.97000436, 0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
+let b = space.body("b", 1.0, 0.97000436, -0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
+let c = space.body("c", 1.0, 0.0, 0.0, 0.0, -0.93240737, -0.86473146, 0.0);
+let out = space.system().add(a).add(b).add(c).propagate(6.32591398, 1201, 0.001, "rk45", 0.000000000001);
+assert_close(out.get(1200, 1), -0.97000436, 0.000001);
+assert_close(out.get(1200, 7), 0.97000436, 0.000001);
+out.save_csv("build/examples/anim_figure_eight.csv");
+end _dsl_
+savedsl(sim, "build/anim_figure_eight-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/anim_figure_eight-sim.dslb;
+assert(r.code == 0);
+
+hdr = "t,ax,ay,az,avx,avy,avz,bx,by,bz,bvx,bvy,bvz,cx,cy,cz,cvx,cvy,cvz\n";
+rows = csv_parse(hdr + read_file("build/examples/anim_figure_eight.csv"));
+path = "";
+for (k in range(0, 1201)) {
+  if (k % 6 == 0) {
+    m = rows.get(k, null);
+    path = path + sprintf("%.1f,%.1f ", 350.0 + 270.0 * m.get("ax", 0.0), 215.0 - 270.0 * m.get("ay", 0.0));
+  }
+}
+for (f in range(0, 100)) {
+  m = rows.get(f * 12, null);
+  xa = 350.0 + 270.0 * m.get("ax", 0.0) + 0.0001;
+  ya = 215.0 - 270.0 * m.get("ay", 0.0) + 0.0001;
+  xb = 350.0 + 270.0 * m.get("bx", 0.0) + 0.0001;
+  yb = 215.0 - 270.0 * m.get("by", 0.0) + 0.0001;
+  xc = 350.0 + 270.0 * m.get("cx", 0.0) + 0.0001;
+  yc = 215.0 - 270.0 * m.get("cy", 0.0) + 0.0001;
+  xa2 = xa + 60.0 * m.get("avx", 0.0);
+  ya2 = ya - 60.0 * m.get("avy", 0.0);
+  xb2 = xb + 60.0 * m.get("bvx", 0.0);
+  yb2 = yb - 60.0 * m.get("bvy", 0.0);
+  xc2 = xc + 60.0 * m.get("cvx", 0.0);
+  yc2 = yc - 60.0 * m.get("cvy", 0.0);
+  tl = sprintf("t = %.2f of 6.33", m.get("t", 0.0));
+  frame = "build/rendered/g" + sprintf("%03d", f) + ".png";
+  d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+  scene.canvas(700, 420, "#0f1720");
+  scene.text(24.0, 34.0, 18.0, "Figure-eight three-body orbit (lmspace, RK45)", "#e6edf3");
+  scene.text(24.0, 58.0, 13.0, ${tl}, "#9fb3c8");
+  scene.polyline(${path}, "#33475b", 2.0);
+  scene.arrow(${xa}, ${ya}, ${xa2}, ${ya2}, "#4fa3ff", 2.0);
+  scene.arrow(${xb}, ${yb}, ${xb2}, ${yb2}, "#ff6b6b", 2.0);
+  scene.arrow(${xc}, ${yc}, ${xc2}, ${yc2}, "#7bd88f", 2.0);
+  scene.circle(${xa}, ${ya}, 10.0, "#4fa3ff");
+  scene.circle(${xb}, ${yb}, 10.0, "#ff6b6b");
+  scene.circle(${xc}, ${yc}, 10.0, "#7bd88f");
+  scene.render_png(${frame}, 700, 420, 1);
+end _dsl_
+  savedsl(d, "build/frame.dslb");
+  r = system ${dsl_cli(d)} --dsl build/frame.dslb;
+  assert(r.code == 0);
+}
+r = system ffmpeg -y -loglevel error -framerate 20 -i build/rendered/g%03d.png -vf "split[a][b];[a]palettegen=max_colors=48[p];[b][p]paletteuse" images/figure_eight.gif;
+assert(r.code == 0);
+println("wrote images/figure_eight.gif");
