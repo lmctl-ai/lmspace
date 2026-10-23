@@ -1,0 +1,11 @@
+# Schema and units
+
+`schema/lmspace.dsl.json` is generated from literal `check` and `checkfn` registrations in `cpp/main.cpp`. The generator handles whitespace introduced by clang-format. Embedded schema bytes are exact: the SDK hashes them when loading bytecode. `test.sh` compares the generated file, embedded bytes, runtime registry signatures and lmscript compiler signatures.
+
+Context `space: Space` owns body creation and SPICE operations. `space.system()` creates an independent system. Body handles point to stable heap objects; adding a body to a system copies its initial state, and propagation does not mutate initial states. The flat body constructor takes a name and seven floats: mu, x,y,z,vx,vy,vz. `space.body(name,mu)` creates a zero state for convenience. Integrations reject zero-separation pairs.
+
+Host results include Vector, State, Elements and Matrix objects. No DSL lists/maps/callbacks are required. Elements accessors are `a/e/i/raan/argp/nu()`, all angles in radians. Matrices have zero-based rows/columns, integer dimensions, scalar `get(row,col)` and comma-separated `save_csv(path)`. Host objects remain alive until process exit.
+
+N-body outputs have columns `t, x0,y0,z0,vx0,vy0,vz0, x1,...`, with equally spaced output times. Numerical methods accept consistent units and gravitational parameters mu=G*mass. Energy/angular momentum use mu as mass (G=1), so physical mass units require dividing by G. Body two-body methods require the explicit central gravitational parameter. SPICE state queries return km and km/s at ET seconds past J2000; target/observer may be names or NAIF ID strings. Frames produce a 3x3 coordinate rotation. UTC parsing requires a caller-supplied leap-second kernel.
+
+The CLI supports only standard host queries and bytecode execution, with dry run validating all bytecode before any run. Errors include JSON phase and source location from the SDK; usage exits 2, load/run errors 3. `assert_close` takes an absolute tolerance and rejects nonfinite numbers and negative tolerance.

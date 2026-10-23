@@ -1,0 +1,29 @@
+p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let a = space.body("a", 1.0, -0.5, 0.0, 0.0, 0.0, -0.7071067811865475, 0.0);
+let b = space.body("b", 1.0, 0.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.0);
+let binary = space.system().add(a).add(b);
+# Independent systems and stable handles survive growing the body's arena.
+for (i in range(0, 25)) {
+  let unused = space.body("unused", 1.0);
+}
+assert_close(a.mu(), 1.0, 0.0);
+assert_close(a.state().position().x(), -0.5, 0.0);
+let isolated = space.system().add(a);
+let inertial = isolated.propagate(1.0, 2, 0.1, "rk45", 0.000000001);
+assert_close(float(inertial.cols()), 7.0, 0.0);
+assert_close(inertial.get(1, 2), -0.7071067811865475, 0.000000001);
+let energy0 = binary.energy();
+let h0 = binary.angular_momentum().z();
+let out = binary.propagate(4.442882938158366, 51, 0.005, "symplectic", 0.000000001);
+for (i in range(0, out.rows())) {
+  let dx = out.get(i, 7)-out.get(i, 1);
+  let dy = out.get(i, 8)-out.get(i, 2);
+  let dz = out.get(i, 9)-out.get(i, 3);
+  let kinetic = (pow(out.get(i, 4),2.0)+pow(out.get(i, 5),2.0)+pow(out.get(i, 6),2.0)+pow(out.get(i, 10),2.0)+pow(out.get(i, 11),2.0)+pow(out.get(i, 12),2.0))/2.0;
+  let energy = kinetic-1.0/sqrt(dx*dx+dy*dy+dz*dz);
+  let hz = out.get(i,1)*out.get(i,5)-out.get(i,2)*out.get(i,4)+out.get(i,7)*out.get(i,11)-out.get(i,8)*out.get(i,10);
+  assert_close(energy, energy0, 0.000001);
+  assert_close(hz, h0, 0.000000001);
+}
+end _dsl_
+savedsl(p, "build/systems.dslb");

@@ -1,0 +1,15 @@
+p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let h = hohmann(7000.0, 42164.0, mu);
+assert_close(h.get(0, 0), 2.336795782386, 0.000000001);
+assert_close(h.get(0, 1), 1.433931450917, 0.000000001);
+# A quarter circular orbit provides independent exact Lambert velocities.
+let l = lambert(vector(7000.0, 0.0, 0.0), vector(0.0, 7000.0, 0.0), period(7000.0, mu)/4.0, mu, true);
+assert_close(l.get(0, 0), 0.0, 0.00000001);
+assert_close(l.get(0, 1), 7.546053290108, 0.00000001);
+assert_close(l.get(1, 0), -7.546053290108, 0.00000001);
+assert_close(l.get(1, 1), 0.0, 0.00000001);
+l.save_csv("build/examples/transfers.csv");
+end _dsl_
+savedsl(p, "build/transfers.dslb");
+system ${dsl_cli(p)} --dsl build/transfers.dslb;

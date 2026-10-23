@@ -1,0 +1,2 @@
+# name repo commit; source mirror of the official NAIF CSPICE N0067 toolkit
+cspice https://github.com/tudat-team/cspice-cmake.git e44da83b8a7a420fdddf02d2e3accebd0ab86e5e

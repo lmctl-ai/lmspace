@@ -1,0 +1,96 @@
+lmspace includes the following third-party component. The source is fetched by
+scripts/sync-deps.sh at the exact commit recorded in deps.lock and is not
+committed to this repository.
+
+================================================================================
+NAIF CSPICE Toolkit (N0067 source; NASA/JPL/Caltech)
+================================================================================
+
+The CSPICE C sources and headers are from the NAIF SPICE Toolkit. The pinned
+packaging mirror is https://github.com/tudat-team/cspice-cmake at commit
+e44da83b8a7a420fdddf02d2e3accebd0ab86e5e. The mirror states that it copied the
+source directly from https://naif.jpl.nasa.gov/naif/; the official origin and
+the authoritative use and redistribution rules are:
+https://naif.jpl.nasa.gov/naif/rules.html
+
+NAIF rules require that unmodified redistribution of the official SPICE Toolkit
+from a mirror have prior written clearance from the NAIF manager. This product
+is a customer-built SPICE-based tool and includes the Toolkit source modules
+as part of that tool, with a new lmspace interface. The source is compiled
+without source modifications; only the build wrapper and lmspace interface are
+new code. No SPICE kernels are included or required at build time. User-provided
+kernels remain subject to the terms of their original distributors.
+
+The following disclaimer is reproduced from the NAIF-provided source headers:
+
+THIS SOFTWARE AND ANY RELATED MATERIALS WERE CREATED BY THE CALIFORNIA
+INSTITUTE OF TECHNOLOGY (CALTECH) UNDER A U.S. GOVERNMENT CONTRACT WITH THE
+NATIONAL AERONAUTICS AND SPACE ADMINISTRATION (NASA). THE SOFTWARE IS
+TECHNOLOGY AND SOFTWARE PUBLICLY AVAILABLE UNDER U.S. EXPORT LAWS AND IS
+PROVIDED "AS-IS" TO THE RECIPIENT WITHOUT WARRANTY OF ANY KIND, INCLUDING ANY
+WARRANTIES OF PERFORMANCE OR MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE
+OR PURPOSE (AS SET FORTH IN UNITED STATES UCC SECTIONS 2312-2313) OR FOR ANY
+PURPOSE WHATSOEVER, FOR THE SOFTWARE AND RELATED MATERIALS, HOWEVER USED.
+
+IN NO EVENT SHALL CALTECH, ITS JET PROPULSION LABORATORY, OR NASA BE LIABLE
+FOR ANY DAMAGES AND/OR COSTS, INCLUDING, BUT NOT LIMITED TO, INCIDENTAL OR
+CONSEQUENTIAL DAMAGES OF ANY KIND, INCLUDING ECONOMIC DAMAGE OR INJURY TO
+PROPERTY AND LOST PROFITS, REGARDLESS OF WHETHER CALTECH, JPL, OR NASA BE
+ADVISED, HAVE REASON TO KNOW, OR, IN FACT, SHALL KNOW OF THE POSSIBILITY.
+
+RECIPIENT BEARS ALL RISK RELATING TO QUALITY AND PERFORMANCE OF THE SOFTWARE
+AND ANY RELATED MATERIALS, AND AGREES TO INDEMNIFY CALTECH AND NASA FOR ALL
+THIRD-PARTY CLAIMS RESULTING FROM THE ACTIONS OF RECIPIENT IN THE USE OF THE
+SOFTWARE AND RELATED MATERIALS.
+
+The NAIF rules also state that commercial use is allowed without fees or
+licensing, subject to NAIF support limitations; modifications are permitted but
+should be clearly marked and are not supported by NAIF; and acknowledgement of
+NASA's SPICE system is encouraged. See the authoritative rules URL above for
+the complete current terms. This notice does not grant rights to redistribute
+third-party kernels.
+
+================================================================================
+Tudat cspice-cmake packaging files
+================================================================================
+
+The upstream mirror's packaging CMakeLists.txt and README are under the
+Modified BSD terms stated in those files. lmspace does not use that CMake
+project; its own small CMake wrapper is MIT-licensed and builds the unchanged
+NAIF source files directly.
+
+================================================================================
+cpp-dsl-sdk (MIT)
+================================================================================
+
+The vendored scripting SDK header is fetched from the pinned SDK source by
+scripts/sync-sdk.sh. Its license is reproduced here in full:
+
+MIT License
+
+Copyright (c) 2026 Lattice Systems LLC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The final statically linked executable may also contain the platform C/C++
+runtime. On supported GNU toolchains, libgcc/libstdc++ are distributed under
+the GCC Runtime Library Exception (with the compiler's accompanying license)
+and glibc is LGPL; the binary can be reproduced and relinked from the stated
+source and toolchain. These runtimes are not application dependencies and no
+GPL application or library code is used.
