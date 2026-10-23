@@ -1,0 +1,160 @@
+# Halo orbits around the Earth-Moon L1 and L2 points, found by differential correction. A halo orbit is a periodic
+# 3D orbit of the restricted three-body problem; from Earth an L2 halo never hides behind the Moon, which is why
+# the Chang'e-4 relay satellite Queqiao flies one to talk to a lander on the far side. The script starts from
+# x0 (fixed), a rough guess of the height z0 and speed vy0, integrates the Earth, the Moon and the probe with
+# lmspace's N-body RK45 up to the next crossing of the Earth-Moon line, and runs Newton's method (finite-difference
+# Jacobian) on z0 and vy0 until the probe crosses that line perpendicularly, which makes the orbit symmetric and
+# periodic. It asserts the converged values (L1: z0 = 0.1141, period 12.1 days; L2: z0 = 0.0944, 14.5 days) and that
+# one full period brings the probe back to its start. lmplot shows the orbits in 3D and as seen from Earth.
+# Output: images/halo_orbits.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 0.01215058560962404;
+# Earth and Moon on circular orbits: G = 1, separation 1, angular speed 1 (one sidereal month = 2 pi)
+let earth = space.body("earth", 1.0 - mu, 0.0 - mu, 0.0, 0.0, 0.0, 0.0 - mu, 0.0);
+let moon = space.body("moon", mu, 1.0 - mu, 0.0, 0.0, 0.0, 1.0 - mu, 0.0);
+let h = 0.0000001;
+for (orb in range(0, 2)) {
+  # start on the x axis, moving along y in the rotating frame; Newton adjusts z0 and vy0
+  let x0 = 0.83;
+  let z0 = 0.06;
+  let vy0 = 0.2;
+  if (orb == 1) { x0 = 1.17; z0 = 0.06; vy0 = -0.2; }
+  let half = 0.0;
+  for (it in range(0, 10)) {
+    let g1 = 0.0;
+    let g2 = 0.0;
+    let j11 = 0.0;
+    let j12 = 0.0;
+    let j21 = 0.0;
+    let j22 = 0.0;
+    for (ev in range(0, 3)) {
+      let zz = z0;
+      let vv = vy0;
+      if (ev == 1) { zz = z0 + h; }
+      if (ev == 2) { vv = vy0 + h; }
+      # inertial velocity = rotating velocity + omega x r
+      let probe = space.body("probe", 0.000000000001, x0, 0.0, zz, 0.0, vv + x0, 0.0);
+      let out = space.system().add(earth).add(moon).add(probe).propagate(2.2, 4401, 0.001, "rk45", 0.000000000001);
+      # first crossing of the rotating x axis (y' changes sign); interpolate the rotating vx' and vz' there
+      let found = 0;
+      let cvx = 0.0;
+      let cvz = 0.0;
+      let ct = 0.0;
+      let py = 0.0;
+      let pvx = 0.0;
+      let pt = 0.0;
+      for (k in range(1, 4401)) {
+        if (found == 0) {
+          let t = out.get(k, 0);
+          let x = out.get(k, 13);
+          let y = out.get(k, 14);
+          let vx = out.get(k, 16);
+          let vy = out.get(k, 17);
+          let yr = 0.0 - x * sin(t) + y * cos(t);
+          let xr = x * cos(t) + y * sin(t);
+          let vxr = vx * cos(t) + vy * sin(t) + yr;
+          if (k > 100 && yr * py <= 0.0) {
+            let f = py / (py - yr);
+            cvx = pvx + f * (vxr - pvx);
+            cvz = out.get(k - 1, 18) + f * (out.get(k, 18) - out.get(k - 1, 18));
+            ct = pt + f * (t - pt);
+            found = 1;
+          }
+          py = yr;
+          pvx = vxr;
+          pt = t;
+        }
+      }
+      if (ev == 0) { g1 = cvx; g2 = cvz; half = ct; }
+      if (ev == 1) { j11 = (cvx - g1) / h; j21 = (cvz - g2) / h; }
+      if (ev == 2) { j12 = (cvx - g1) / h; j22 = (cvz - g2) / h; }
+    }
+    let det = j11 * j22 - j12 * j21;
+    z0 = z0 - (j22 * g1 - j12 * g2) / det;
+    vy0 = vy0 - (j11 * g2 - j21 * g1) / det;
+  }
+  let days = 2.0 * half * 27.321661 / 6.283185307179586;
+  print("halo " + str(orb + 1) + ": x0 " + str(x0) + " z0 " + str(z0) + " vy0 " + str(vy0) + " period " + str(days) + " days");
+  if (orb == 0) {
+    assert_close(z0, 0.11406, 0.0005);
+    assert_close(vy0, 0.22939, 0.0005);
+    assert_close(days, 12.12, 0.05);
+  }
+  if (orb == 1) {
+    assert_close(z0, 0.09440, 0.0005);
+    assert_close(vy0, -0.19260, 0.0005);
+    assert_close(days, 14.51, 0.05);
+  }
+  # one full period from the corrected start: back where it began (in the rotating frame)
+  let probe = space.body("probe", 0.000000000001, x0, 0.0, z0, 0.0, vy0 + x0, 0.0);
+  let full = space.system().add(earth).add(moon).add(probe).propagate(2.0 * half, 1201, 0.001, "rk45", 0.000000000001);
+  let tf = full.get(1200, 0);
+  let xf = full.get(1200, 13) * cos(tf) + full.get(1200, 14) * sin(tf);
+  let yf = 0.0 - full.get(1200, 13) * sin(tf) + full.get(1200, 14) * cos(tf);
+  assert_close(xf, x0, 0.001);
+  assert_close(yf, 0.0, 0.001);
+  assert_close(full.get(1200, 15), z0, 0.001);
+  if (orb == 0) { full.save_csv("build/examples/halo_l1.csv"); }
+  if (orb == 1) { full.save_csv("build/examples/halo_l2.csv"); }
+}
+end _dsl_
+savedsl(sim, "build/viz_halo_orbits-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_halo_orbits-sim.dslb;
+println(r.stdout);
+assert(r.code == 0);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/halo_orbits.png", 1200, 640);
+plot.cmd("set datafile separator ','");
+plot.cmd("mu = 0.01215058560962404");
+plot.cmd("km = 384400.0");
+plot.cmd("rx(x,y,t) = (x*cos(t) + y*sin(t))");
+plot.cmd("ry(x,y,t) = (-x*sin(t) + y*cos(t))");
+plot.cmd("set multiplot title 'Earth-Moon halo orbits by differential correction (lmspace N-body RK45, Newton on z0 and vy0)' font ',14'");
+plot.cmd("set origin 0,0");
+plot.cmd("set size 0.55,0.93");
+plot.cmd("set title 'Rotating frame, 3D (1000 km from the Moon)'");
+plot.cmd("set view 62,28,1.15");
+plot.cmd("set view equal xyz");
+plot.cmd("set ticslevel 0");
+plot.cmd("set grid");
+plot.cmd("set xlabel 'x'");
+plot.cmd("set ylabel 'y'");
+plot.cmd("set zlabel 'z' rotate parallel");
+plot.cmd("set xrange [-80:80]");
+plot.cmd("set yrange [-80:80]");
+plot.cmd("set zrange [-50:50]");
+plot.cmd("set key at screen 0.04,0.12 left Left reverse box opaque");
+plot.cmd("set parametric");
+plot.cmd("set urange [0:2*pi]");
+plot.cmd("set vrange [-pi/2:pi/2]");
+plot.cmd("set isosamples 18,10");
+plot.cmd("set label 2 'L1' at -58.0,0,0 point pt 7 ps 1.2 offset 0,1 front");
+plot.cmd("set label 3 'L2' at 64.5,0,0 point pt 7 ps 1.2 offset 0,1 front");
+plot.cmd("mx(x,y,t) = (rx(x,y,t) - 1 + mu)*km/1000");
+plot.cmd("splot 1.737*6*cos(u)*cos(v), 1.737*6*sin(u)*cos(v), 1.737*6*sin(v) with lines lc rgb '#9a9a9a' title 'Moon (radius x 6)', 'build/examples/halo_l1.csv' using (mx($14,$15,$1)):(ry($14,$15,$1)*km/1000):($16*km/1000) with lines lw 3 lc rgb '#1f77b4' title 'L1 halo, 12.1 days', 'build/examples/halo_l2.csv' using (mx($14,$15,$1)):(ry($14,$15,$1)*km/1000):($16*km/1000) with lines lw 3 lc rgb '#d62728' title 'L2 halo, 14.5 days'");
+plot.cmd("unset parametric");
+plot.cmd("unset label 2");
+plot.cmd("unset label 3");
+plot.cmd("set origin 0.55,0");
+plot.cmd("set size 0.45,0.93");
+plot.cmd("set title 'L2 halo seen from Earth: always clear of the Moon'");
+plot.cmd("set size ratio -1");
+plot.cmd("set xlabel 'y [1000 km]'");
+plot.cmd("set ylabel 'z [1000 km]'");
+plot.cmd("set xrange [-50:50]");
+plot.cmd("set yrange [-50:50]");
+plot.cmd("unset key");
+plot.cmd("set object 1 circle at 0,0 size 1.737 fc rgb '#9a9a9a' fillstyle solid front");
+plot.cmd("set label 1 'Moon' at 0,-4 center front");
+plot.cmd("plot 'build/examples/halo_l2.csv' using (ry($14,$15,$1)*km/1000):($16*km/1000) with lines lw 3 lc rgb '#d62728'");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_halo_orbits-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_halo_orbits-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/halo_orbits.png");

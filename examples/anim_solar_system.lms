@@ -1,0 +1,179 @@
+# The inner Solar System from 1 January 2000 for 800 days, and why Mars sometimes moves backwards in our sky.
+# lmspace places Mercury, Venus, Earth and Mars from their J2000 mean elements (JPL, Standish), solves Kepler's
+# equation for each (kepler) and propagates them exactly (State.propagate). The right panel is Mars's direction as
+# seen from Earth (change of ecliptic longitude per day): when Earth overtakes Mars at opposition, Mars appears to move backwards for
+# about two months. Asserts: Earth is at perihelion distance (0.983 AU) in early January; Mars's year is 1.88 Earth
+# years; the opposition (Earth between the Sun and Mars) falls within a week of the real one on 13 June 2001; and the
+# retrograde loop lasts 60 to 80 days. lmdraw draws 120 frames, ffmpeg makes the GIF (needs ffmpeg on PATH).
+# Output: images/solar_system.gif   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("build/rendered");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+# AU and days: mu = k^2 with the Gaussian gravitational constant
+let mu = 0.01720209895 * 0.01720209895;
+let deg = 0.017453292519943295;
+let pi = 3.141592653589793;
+# heliocentric ecliptic states of the four planets at J2000
+let st0 = state(vector(0.0, 0.0, 0.0), vector(0.0, 0.0, 0.0));
+let st1 = st0;
+let st2 = st0;
+let st3 = st0;
+for (p in range(0, 4)) {
+  # a [AU], e, i, mean longitude L, longitude of perihelion w, node O [deg]
+  let a = 0.38709927; let e = 0.20563593; let i = 7.00497902; let L = 252.25032350; let w = 77.45779628; let O = 48.33076593;
+  if (p == 1) { a = 0.72333566; e = 0.00677672; i = 3.39467605; L = 181.97909950; w = 131.60246718; O = 76.67984255; }
+  if (p == 2) { a = 1.00000261; e = 0.01671123; i = 0.00001531; L = 100.46457166; w = 102.93768193; O = 0.0; }
+  if (p == 3) { a = 1.52371034; e = 0.09339410; i = 1.84969142; L = -4.55343205; w = -23.94362959; O = 49.55953891; }
+  let M = (L - w) * deg;
+  let E = kepler(M, e);
+  # true anomaly = atan2(sqrt(1 - e^2) sin E, cos E - e), by Newton on sin/cos (the host has no atan2)
+  let sy = sqrt(1.0 - e * e) * sin(E);
+  let sx = cos(E) - e;
+  let nu = E;
+  for (it in range(0, 8)) { nu = nu + (sy * cos(nu) - sx * sin(nu)) / (sx * cos(nu) + sy * sin(nu)); }
+  let st = elements(a, e, i * deg, O * deg, (w - O) * deg, nu).to_state(mu);
+  if (p == 0) { st0 = st; }
+  if (p == 1) { st1 = st; }
+  if (p == 2) { st2 = st; }
+  if (p == 3) { st3 = st; }
+  print("orbit " + str(p) + " " + str(period(a, mu) / 365.25));
+}
+let rE = st2.position();
+assert_close(sqrt(rE.x() * rE.x() + rE.y() * rE.y()), 0.9833, 0.001);
+assert_close(period(1.52371034, mu) / 365.25, 1.881, 0.001);
+# 800 days: planet positions every day, and Mars's ecliptic longitude seen from Earth
+let prev = 0.0;
+let lon = 0.0;
+let opp = 0.0;
+let best = 10.0;
+let retro_start = -1.0;
+let retro_end = -1.0;
+for (d in range(0, 801)) {
+  let t = float(d);
+  let p0 = st0.propagate(mu, t).position();
+  let p1 = st1.propagate(mu, t).position();
+  let p2 = st2.propagate(mu, t).position();
+  let p3 = st3.propagate(mu, t).position();
+  let dx = p3.x() - p2.x();
+  let dy = p3.y() - p2.y();
+  let a0 = 0.0;
+  if (abs(dy) > abs(dx)) { if (dy > 0.0) { a0 = 0.5 * pi; } else { a0 = -0.5 * pi; } } else { if (dx < 0.0) { a0 = pi; } }
+  for (it in range(0, 6)) { a0 = a0 + (dy * cos(a0) - dx * sin(a0)) / (dx * cos(a0) + dy * sin(a0)); }
+  # unwrap the longitude so the curve is continuous
+  lon = a0 / deg;
+  if (d > 0) {
+    for (u in range(0, 3)) {
+      if (lon - prev > 180.0) { lon = lon - 360.0; }
+      if (lon - prev < -180.0) { lon = lon + 360.0; }
+    }
+    if (lon < prev && retro_start < 0.0) { retro_start = t; }
+    if (lon > prev && retro_start > 0.0 && retro_end < 0.0) { retro_end = t; }
+  }
+  prev = lon;
+  # opposition: Sun, Earth and Mars in a line, Earth in the middle (angle between them smallest)
+  let c = (p2.x() * dx + p2.y() * dy) / sqrt((p2.x() * p2.x() + p2.y() * p2.y()) * (dx * dx + dy * dy));
+  if (1.0 - c < best) { best = 1.0 - c; opp = t; }
+  print("day " + str(d) + " " + str(p0.x()) + " " + str(p0.y()) + " " + str(p1.x()) + " " + str(p1.y()) + " " + str(p2.x()) + " " + str(p2.y()) + " " + str(p3.x()) + " " + str(p3.y()) + " " + str(lon));
+}
+print("opposition " + str(opp) + " retrograde " + str(retro_start) + " " + str(retro_end));
+# 13 June 2001 is 529 days after 1 January 2000, 12h
+assert_close(opp, 529.0, 7.0);
+assert_close(retro_end - retro_start, 70.0, 10.0);
+end _dsl_
+savedsl(sim, "build/anim_solar_system-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/anim_solar_system-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println(regex_replace(r.stdout, "(day|orbit) [^\n]*\n", "", "g"));
+rows = csv_parse("tag d x0 y0 x1 y1 x2 y2 x3 y3 lon\n" + trim(regex_replace(regex_replace(r.stdout, "(orbit|opposition) [^\n]*\n", "", "g"), "\\{\"ok\".*", "")), true, " ");
+info = regex_replace(regex_replace(r.stdout, "^.*opposition ", "", "s"), "\n.*$", "", "s");
+parts = csv_parse("o rs re\n" + regex_replace(info, " retrograde", ""), true, " ").get(0, null);
+rs = parts.get("rs", 0.0);
+re = parts.get("re", 0.0);
+
+# orbit view: Sun at (225, 235), 140 px per AU; chart: day 0..800 -> x 500..860, longitude -> y
+CX = 225.0;
+CY = 240.0;
+S = 120.0;
+# apparent motion of Mars along the ecliptic, deg/day (negative = backwards = retrograde)
+rate = [0.0];
+for (k in range(1, rows.len())) { push(rate, rows.get(k, null).get("lon", 0.0) - rows.get(k - 1, null).get("lon", 0.0)); }
+push(rate, 0.0);
+lmin = -0.5;
+lmax = 0.9;
+zy = 400.0 - 290.0 * (0.0 - lmin) / (lmax - lmin) + 0.0001;
+orbits = [];
+for (p in range(0, 4)) {
+  t = "";
+  n = 88;
+  if (p == 1) { n = 225; }
+  if (p == 2) { n = 366; }
+  if (p == 3) { n = 687; }
+  for (k in range(0, n + 1)) {
+    m = rows.get(k, null);
+    t = t + sprintf(" %.1f,%.1f", CX + S * m.get("x" + p, 0.0), CY - S * m.get("y" + p, 0.0));
+  }
+  push(orbits, trim(t));
+}
+o0 = orbits.get(0, "");
+o1 = orbits.get(1, "");
+o2 = orbits.get(2, "");
+o3 = orbits.get(3, "");
+# 0.0001 keeps every interpolated number a float literal for the DSL
+rx0 = 500.0 + 360.0 * rs / 800.0 + 0.0001;
+rw = 360.0 * (re - rs) / 800.0 + 0.0001;
+for (f in range(0, 120)) {
+  day = floor(f * 800 / 119);
+  m = rows.get(day, null);
+  x0 = CX + S * m.get("x0", 0.0) + 0.0001; y0 = CY - S * m.get("y0", 0.0) + 0.0001;
+  x1 = CX + S * m.get("x1", 0.0) + 0.0001; y1 = CY - S * m.get("y1", 0.0) + 0.0001;
+  x2 = CX + S * m.get("x2", 0.0) + 0.0001; y2 = CY - S * m.get("y2", 0.0) + 0.0001;
+  x3 = CX + S * m.get("x3", 0.0) + 0.0001; y3 = CY - S * m.get("y3", 0.0) + 0.0001;
+  curve = "";
+  for (k in range(0, day + 1)) {
+    if (k % 4 == 0 || k == day) {
+      curve = curve + sprintf(" %.1f,%.1f", 500.0 + 360.0 * k / 800.0, 400.0 - 290.0 * (rate.get(max(k, 1), 0.0) - lmin) / (lmax - lmin));
+    }
+  }
+  if (day < 4) { curve = sprintf("500.0,%.1f 500.1,%.1f", 400.0 - 290.0 * (rate.get(1, 0.0) - lmin) / (lmax - lmin), 400.0 - 290.0 * (rate.get(1, 0.0) - lmin) / (lmax - lmin)); }
+  cy = 400.0 - 290.0 * (rate.get(max(day, 1), 0.0) - lmin) / (lmax - lmin) + 0.0001;
+  cx = 500.0 + 360.0 * day / 800.0 + 0.0001;
+  label = sprintf("day %d after 1 Jan 2000", day);
+  frame = "build/rendered/s" + sprintf("%03d", f) + ".png";
+  d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+  scene.canvas(900, 450, "#0b1220");
+  scene.text(24.0, 32.0, 18.0, "Inner Solar System (lmspace, Kepler propagation from J2000 elements)", "#e6edf3").set_attr("font-weight", "700");
+  scene.text(24.0, 54.0, 13.0, ${label}, "#9fb3c8");
+  scene.polyline(${o0}, "#3a4a5c", 1.2);
+  scene.polyline(${o1}, "#3a4a5c", 1.2);
+  scene.polyline(${o2}, "#3a4a5c", 1.2);
+  scene.polyline(${o3}, "#3a4a5c", 1.2);
+  scene.line(${x2}, ${y2}, ${x3}, ${y3}, "#c1440e", 1.0).set_attr("stroke-dasharray", "4 3");
+  scene.circle(225.0, 240.0, 9.0, "#ffcc33");
+  scene.circle(${x0}, ${y0}, 4.0, "#b0b0b0");
+  scene.circle(${x1}, ${y1}, 6.0, "#e8c27a");
+  scene.circle(${x2}, ${y2}, 6.5, "#4fa3ff");
+  scene.circle(${x3}, ${y3}, 5.5, "#ff6b4a");
+  scene.legend(24.0, 340.0, "Mercury\nVenus\nEarth\nMars", "#b0b0b0,#e8c27a,#4fa3ff,#ff6b4a", "#e6edf3", "none");
+  scene.text(500.0, 92.0, 14.0, "Motion of Mars across our sky (deg/day)", "#e6edf3");
+  scene.rect(${rx0}, 110.0, ${rw}, 290.0, "#1d2b3d");
+  scene.text(${rx0}, 424.0, 12.0, "retrograde", "#ff6b4a");
+  scene.line(500.0, ${zy}, 860.0, ${zy}, "#5a6a7c", 1.0);
+  scene.line(500.0, 110.0, 500.0, 400.0, "#5a6a7c", 1.0);
+  scene.text(860.0, 440.0, 12.0, "800 days", "#9fb3c8").set_attr("text-anchor", "end");
+  scene.text(492.0, ${zy} + 4.0, 12.0, "0", "#9fb3c8").set_attr("text-anchor", "end");
+  scene.text(508.0, 128.0, 12.0, "eastward (normal)", "#9fb3c8");
+  scene.text(508.0, 392.0, 12.0, "westward (backwards)", "#9fb3c8");
+  scene.polyline(${curve}, "#ff6b4a", 2.2);
+  scene.circle(${cx}, ${cy}, 4.0, "#ff6b4a");
+  scene.render_png(${frame}, 900, 450, 1);
+end _dsl_
+  savedsl(d, "build/solar_frame.dslb");
+  r = system ${dsl_cli(d)} --dsl build/solar_frame.dslb;
+  if (r.code != 0) { println(r.stderr); }
+  assert(r.code == 0);
+}
+r = system ffmpeg -y -loglevel error -framerate 15 -i build/rendered/s%03d.png -vf "split[a][b];[a]palettegen=max_colors=48[p];[b][p]paletteuse" images/solar_system.gif;
+assert(r.code == 0);
+println("wrote images/solar_system.gif");

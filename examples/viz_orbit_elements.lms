@@ -77,7 +77,7 @@ scene.text(597.0, 349.0, 13.0, "focus", "#f5c16c");
 scene.text(470.0, 349.0, 13.0, "centre", "#9fb3c8").set_attr("text-anchor", "end");
 scene.text(551.0, 360.0, 13.0, "a e = 0.6 (centre to focus)", "#c792ea").set_attr("text-anchor", "middle");
 scene.text(535.0, 308.0, 14.0, "a = 1", "#ffd166").set_attr("text-anchor", "middle");
-scene.text(470.0, 160.0, 14.0, "b = a sqrt(1 - e^2) = 0.8", "#7bd88f").set_attr("text-anchor", "end");
+scene.text(470.0, 215.0, 14.0, "b = a sqrt(1 - e^2) = 0.8", "#7bd88f").set_attr("text-anchor", "end");
 scene.text(718.0, 306.0, 13.0, "periapsis r = a (1 - e) = 0.4", "#e6edf3");
 scene.text(246.0, 306.0, 13.0, "apoapsis r = a (1 + e) = 1.6", "#e6edf3");
 scene.line(620.0, 320.0, ${pxs}, ${pys}, "#ff6b6b", 2.0).set_attr("stroke-dasharray", "6 4");
@@ -87,7 +87,7 @@ scene.arrow(${pxs}, ${pys}, ${vxs}, ${vys}, "#7bd88f", 3.0);
 scene.circle(${pxs}, ${pys}, 7.0, "#ff6b6b");
 scene.text(${pxs} + 14.0, ${pys} + 4.0, 13.0, ${tl_r}, "#ff6b6b");
 scene.text(${vxs} + 12.0, ${vys} + 2.0, 13.0, ${tl_v}, "#7bd88f");
-scene.text(${vxs} + 12.0, ${vys} + 18.0, 12.0, ${tl_vv}, "#9fb3c8");
+scene.text(${vxs} + 12.0, ${vys} - 14.0, 12.0, ${tl_vv}, "#9fb3c8");
 scene.render_png("build/rendered/orbit_elements.png", 900, 560, 1);
 end _dsl_
 savedsl(d, "build/viz_orbit_elements-draw.dslb");

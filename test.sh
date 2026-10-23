@@ -101,6 +101,8 @@ if command -v lmplot >/dev/null 2>&1 || [ "${LMSPACE_TEST_NETWORK:-}" = 1 ]; the
   for src in examples/*.lms; do
     name="$(basename "$src" .lms)"
     case "$name" in anim_*) command -v ffmpeg >/dev/null 2>&1 || { echo "SKIPPED: $name needs ffmpeg"; continue; };; esac
+    # these fetch data over HTTP (Natural Earth map, NAIF kernels) or install lmblender
+    case "$name" in viz_ground_tracks|viz_spice_time|render_*) [ "${LMSPACE_TEST_NETWORK:-}" = 1 ] || { echo "SKIPPED: $name needs the network (LMSPACE_TEST_NETWORK=1)"; continue; };; esac
     (cd "$EXDIR" && "$LMSCRIPT" "$ROOT/$src") >"$WORK/$name.log" 2>&1 || { cat "$WORK/$name.log" >&2; fail "$name example"; }
     n=$((n+1))
   done
@@ -110,6 +112,7 @@ if command -v lmplot >/dev/null 2>&1 || [ "${LMSPACE_TEST_NETWORK:-}" = 1 ]; the
   for f in "$EXDIR"/build/examples/*.csv; do echo "$(sha "$f") $(basename "$f")"; done >"$WORK/before.txt"
   for src in examples/*.lms; do
     case "$(basename "$src" .lms)" in anim_*) command -v ffmpeg >/dev/null 2>&1 || continue;; esac
+    case "$(basename "$src" .lms)" in viz_ground_tracks|viz_spice_time|render_*) [ "${LMSPACE_TEST_NETWORK:-}" = 1 ] || continue;; esac
     (cd "$EXDIR" && "$LMSCRIPT" "$ROOT/$src") >/dev/null 2>&1 || fail "$src rerun"
   done
   for f in "$EXDIR"/build/examples/*.csv; do echo "$(sha "$f") $(basename "$f")"; done >"$WORK/after.txt"

@@ -1,0 +1,144 @@
+# Initial orbit determination from three radar fixes (Gibbs' method, Curtis "Orbital Mechanics for Engineering
+# Students", algorithm 5.1). A satellite on an 8000 km, e = 0.15 orbit is observed three times; lmspace provides the
+# true positions (exact Kepler propagation) and turns the Gibbs velocity back into orbital elements (to_elements).
+# Without noise the method recovers a, e and i to 1e-6. With 1 km of measurement noise (Gaussian, from a seeded
+# generator, so the run is reproducible) the script repeats the fit 300 times for each spacing between the fixes and
+# shows the classic trade-off: fixes 1 minute apart give semi-major axes wrong by hundreds of km, fixes 20 minutes
+# apart by a few km. The asserts check the noise-free recovery and that the error falls by more than 20 times.
+# Output: images/orbit_determination.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let deg = 0.017453292519943295;
+let truth = elements(8000.0, 0.15, 40.0 * deg, 60.0 * deg, 30.0 * deg, 10.0 * deg).to_state(mu);
+let seed = 12345.0;
+let err_first = 0.0;
+let err_last = 0.0;
+for (sp in range(0, 9)) {
+  # spacing between fixes: 60 s to 1500 s; trial 0 is noise-free
+  let dt = 60.0 + 180.0 * float(sp);
+  let sq = 0.0;
+  let ntr = 300;
+  for (trial in range(0, ntr + 1)) {
+    let sigma = 1.0;
+    if (trial == 0) { sigma = 0.0; }
+    let r1 = truth.propagate(mu, 0.0).position();
+    let r2 = truth.propagate(mu, dt).position();
+    let r3 = truth.propagate(mu, 2.0 * dt).position();
+    # nine Gaussian samples (sum of 12 uniforms minus 6) from a Park-Miller generator
+    let nz = 0.0;
+    let x1 = r1.x(); let y1 = r1.y(); let z1 = r1.z();
+    let x2 = r2.x(); let y2 = r2.y(); let z2 = r2.z();
+    let x3 = r3.x(); let y3 = r3.y(); let z3 = r3.z();
+    for (c in range(0, 9)) {
+      let g = -6.0;
+      for (u in range(0, 12)) {
+        seed = seed * 16807.0 - 2147483647.0 * floor(seed * 16807.0 / 2147483647.0);
+        g = g + seed / 2147483647.0;
+      }
+      g = g * sigma;
+      if (c == 0) { x1 = x1 + g; }
+      if (c == 1) { y1 = y1 + g; }
+      if (c == 2) { z1 = z1 + g; }
+      if (c == 3) { x2 = x2 + g; }
+      if (c == 4) { y2 = y2 + g; }
+      if (c == 5) { z2 = z2 + g; }
+      if (c == 6) { x3 = x3 + g; }
+      if (c == 7) { y3 = y3 + g; }
+      if (c == 8) { z3 = z3 + g; }
+    }
+    let m1 = sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+    let m2 = sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+    let m3 = sqrt(x3 * x3 + y3 * y3 + z3 * z3);
+    # cross products c23 = r2 x r3, c31 = r3 x r1, c12 = r1 x r2
+    let ax = y2 * z3 - z2 * y3; let ay = z2 * x3 - x2 * z3; let az = x2 * y3 - y2 * x3;
+    let bx = y3 * z1 - z3 * y1; let by = z3 * x1 - x3 * z1; let bz = x3 * y1 - y3 * x1;
+    let cx = y1 * z2 - z1 * y2; let cy = z1 * x2 - x1 * z2; let cz = x1 * y2 - y1 * x2;
+    # N = m1 c23 + m2 c31 + m3 c12, D = c12 + c23 + c31, S = r1 (m2 - m3) + r2 (m3 - m1) + r3 (m1 - m2)
+    let nx = m1 * ax + m2 * bx + m3 * cx; let ny = m1 * ay + m2 * by + m3 * cy; let nzz = m1 * az + m2 * bz + m3 * cz;
+    let dx = ax + bx + cx; let dy = ay + by + cy; let dz = az + bz + cz;
+    let sx = x1 * (m2 - m3) + x2 * (m3 - m1) + x3 * (m1 - m2);
+    let sy = y1 * (m2 - m3) + y2 * (m3 - m1) + y3 * (m1 - m2);
+    let sz = z1 * (m2 - m3) + z2 * (m3 - m1) + z3 * (m1 - m2);
+    let nn = sqrt(nx * nx + ny * ny + nzz * nzz);
+    let dd = sqrt(dx * dx + dy * dy + dz * dz);
+    let k = sqrt(mu / (nn * dd));
+    # v2 = k (D x r2 / |r2| + S)
+    let vx = k * ((dy * z2 - dz * y2) / m2 + sx);
+    let vy = k * ((dz * x2 - dx * z2) / m2 + sy);
+    let vz = k * ((dx * y2 - dy * x2) / m2 + sz);
+    let fit = to_elements(state(vector(x2, y2, z2), vector(vx, vy, vz)), mu);
+    if (trial == 0) {
+      assert_close(fit.a(), 8000.0, 0.000001);
+      assert_close(fit.e(), 0.15, 0.000000001);
+      assert_close(fit.i(), 40.0 * deg, 0.000000001);
+    } else {
+      sq = sq + pow(fit.a() - 8000.0, 2.0);
+      if (sp == 1) { print("fit " + str(fit.a()) + " " + str(fit.e())); }
+    }
+  }
+  let rms = sqrt(sq / float(ntr));
+  if (sp == 0) { err_first = rms; }
+  if (sp == 8) { err_last = rms; }
+  print("rms " + str(dt) + " " + str(rms));
+}
+assert_close(min(err_first / err_last, 20.0), 20.0, 0.0);
+# for the picture: the same orbit drawn in its own plane (i = raan = 0, same a, e, argp, nu) and the three fixes
+let flat = elements(8000.0, 0.15, 0.0, 0.0, 30.0 * deg, 10.0 * deg).to_state(mu);
+let sun = space.body("earth", mu);
+let sat = space.body("sat", 0.000000000001, flat.position().x(), flat.position().y(), 0.0, flat.velocity().x(), flat.velocity().y(), 0.0);
+space.system().add(sun).add(sat).propagate(period(8000.0, mu), 400, 5.0, "rk45", 0.0000000001).save_csv("build/examples/od_orbit.csv");
+for (j in range(0, 3)) {
+  let p = flat.propagate(mu, 240.0 * float(j)).position();
+  print("fix," + str(p.x()) + "," + str(p.y()) + "," + str(p.z()));
+}
+end _dsl_
+savedsl(sim, "build/viz_orbit_determination-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_orbit_determination-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+write_file("build/examples/od.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
+write_file("build/examples/od_fixes.csv", regex_replace(r.stdout, "^(?!fix,).*\n?", "", "gm"));
+println(regex_replace(r.stdout, "(fit|fix)[^\n]*\n", "", "g"));
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/orbit_determination.png", 1200, 560);
+plot.cmd("set multiplot layout 1,3 title \"Orbit from three radar fixes (Gibbs' method; truth and elements by lmspace)\" font ',14'");
+plot.cmd("set grid");
+plot.cmd("set title 'Orbit (blue), fixes 240 s apart (red)'");
+plot.cmd("unset key");
+plot.cmd("set size ratio -1");
+plot.cmd("set datafile separator ','");
+plot.cmd("set xlabel 'in-plane x [1000 km]'");
+plot.cmd("set ylabel 'in-plane y [1000 km]'");
+plot.cmd("set object 1 circle at 0,0 size 6.378 fc rgb '#9ecae1' fillstyle solid back");
+plot.cmd("set xrange [-10:10]");
+plot.cmd("set yrange [-10:10]");
+plot.cmd("plot 'build/examples/od_orbit.csv' using ($8/1000):($9/1000) with lines lw 2 lc rgb '#1f77b4' title 'true orbit', 'build/examples/od_fixes.csv' using ($2/1000):($3/1000) with points pt 7 ps 1.8 lc rgb '#d62728' title 'radar fixes'");
+plot.cmd("unset object 1");
+plot.cmd("set datafile separator whitespace");
+plot.cmd("set title 'Fits from fixes 240 s apart, 1 km noise'");
+plot.cmd("set label 1 'truth' at 8000,0.15 point pt 3 ps 3 lw 3 lc rgb 'black' offset 1,1 front");
+plot.cmd("set size noratio");
+plot.cmd("set autoscale");
+plot.cmd("set xlabel 'semi-major axis a [km]'");
+plot.cmd("set ylabel 'eccentricity e'");
+plot.cmd("set key top right box opaque");
+plot.cmd("plot 'build/examples/od.txt' using (strcol(1) eq 'fit' ? $2 : NaN):3 with points pt 7 ps 0.6 lc rgb '#ff7f0e' title '300 noisy fits'");
+plot.cmd("unset label 1");
+plot.cmd("set title 'RMS error of a against spacing'");
+plot.cmd("set logscale y");
+plot.cmd("set xlabel 'time between fixes [s]'");
+plot.cmd("set ylabel 'RMS error of a [km]'");
+plot.cmd("set xtics 300");
+plot.cmd("unset key");
+plot.cmd("plot 'build/examples/od.txt' using (strcol(1) eq 'rms' ? $2 : NaN):3 with linespoints pt 7 ps 1.2 lw 2 lc rgb '#2ca02c'");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_orbit_determination-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_orbit_determination-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/orbit_determination.png");

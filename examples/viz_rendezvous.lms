@@ -1,0 +1,118 @@
+# Orbital rendezvous intuition: near a space station, a push forward makes you fall behind. A chaser starts at the
+# station (ISS-like circular orbit, 400 km) and fires 1 m/s, either radially up or forward along the track. lmspace
+# propagates both spacecraft exactly (Kepler, State.propagate) for three orbits; the script expresses the chaser in
+# the station's local frame (radial up, along-track, cross-track) and compares it with the linear
+# Clohessy-Wiltshire solution. Asserts: the radial push traces a closed 2:1 ellipse, 3.5 km long and 1.8 km high, that returns to the
+# station every orbit; the forward push climbs, slows and drifts 6 pi v / n = 16.7 km behind per orbit; the exact
+# and linear motions agree within 1 % of the excursion (3 % in height after three orbits). lmplot shows both in the station frame.
+# Output: images/rendezvous.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let a = 6778.137;
+let n = sqrt(mu / pow(a, 3.0));
+let T = period(a, mu);
+let dv = 0.001;
+let target = elements(a, 0.0, 51.6 * 0.017453292519943295, 0.0, 0.0, 0.0).to_state(mu);
+let r0 = target.position();
+let v0 = target.velocity();
+let rr = sqrt(r0.x() * r0.x() + r0.y() * r0.y() + r0.z() * r0.z());
+let vv = sqrt(v0.x() * v0.x() + v0.y() * v0.y() + v0.z() * v0.z());
+let worst0 = 0.0;
+let worst1 = 0.0;
+let back0 = 0.0;
+let drift1 = 0.0;
+for (c in range(0, 2)) {
+  # impulse 1 m/s: radially outwards (c = 0) or along the velocity (c = 1)
+  let ix = r0.x() / rr * dv;
+  let iy = r0.y() / rr * dv;
+  let iz = r0.z() / rr * dv;
+  if (c == 1) { ix = v0.x() / vv * dv; iy = v0.y() / vv * dv; iz = v0.z() / vv * dv; }
+  let chaser = state(vector(r0.x(), r0.y(), r0.z()), vector(v0.x() + ix, v0.y() + iy, v0.z() + iz));
+  for (k in range(0, 601)) {
+    let t = 3.0 * T * float(k) / 600.0;
+    let s = target.propagate(mu, t);
+    let q = chaser.propagate(mu, t);
+    let px = s.position().x(); let py = s.position().y(); let pz = s.position().z();
+    let wx = s.velocity().x(); let wy = s.velocity().y(); let wz = s.velocity().z();
+    let pr = sqrt(px * px + py * py + pz * pz);
+    # local frame of the station: radial unit R, orbit normal H = r x v / |r x v|, along-track A = H x R
+    let hx = py * wz - pz * wy; let hy = pz * wx - px * wz; let hz = px * wy - py * wx;
+    let hn = sqrt(hx * hx + hy * hy + hz * hz);
+    hx = hx / hn; hy = hy / hn; hz = hz / hn;
+    let rx = px / pr; let ry = py / pr; let rz = pz / pr;
+    let ax = hy * rz - hz * ry; let ay = hz * rx - hx * rz; let az = hx * ry - hy * rx;
+    let dx = q.position().x() - px; let dy = q.position().y() - py; let dz = q.position().z() - pz;
+    let rad = (dx * rx + dy * ry + dz * rz) * 1000.0;
+    let alg = (dx * ax + dy * ay + dz * az) * 1000.0;
+    # Clohessy-Wiltshire, in metres
+    let cwx = dv / n * sin(n * t) * 1000.0;
+    let cwy = 2.0 * dv / n * (cos(n * t) - 1.0) * 1000.0;
+    if (c == 1) {
+      cwx = 2.0 * dv / n * (1.0 - cos(n * t)) * 1000.0;
+      cwy = (4.0 * dv / n * sin(n * t) - 3.0 * dv * t) * 1000.0;
+    }
+    let err = sqrt(pow(rad - cwx, 2.0) + pow(alg - cwy, 2.0));
+    if (c == 0) { worst0 = max(worst0, err); if (k == 200) { back0 = sqrt(rad * rad + alg * alg); } }
+    if (c == 1) { worst1 = max(worst1, err); if (k == 200) { drift1 = alg; } }
+    print(str(c) + " " + str(t / T) + " " + str(rad) + " " + str(alg) + " " + str(cwx) + " " + str(cwy));
+  }
+  print("");
+  print("");
+}
+# radial push: back at the station after one orbit, ellipse 4 v / n long
+assert_close(back0, 0.0, 5.0);
+assert_close(4.0 * dv / n * 1000.0, 3537.0, 5.0);
+assert_close(worst0, 0.0, 0.01 * 1768.0);
+# forward push: 3 * 2 pi * v / n behind after one orbit
+assert_close(drift1, 0.0 - 6.0 * 3.141592653589793 * dv / n * 1000.0, 0.01 * 16700.0);
+assert_close(drift1, -16670.0, 200.0);
+assert_close(worst1, 0.0, 0.01 * 50000.0);
+end _dsl_
+savedsl(sim, "build/viz_rendezvous-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_rendezvous-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+write_file("build/examples/rendezvous.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/rendezvous.png", 1200, 560);
+plot.cmd("set multiplot layout 1,2 title 'A 1 m/s push next to a space station, seen from the station (lmspace Kepler vs Clohessy-Wiltshire)' font ',14'");
+plot.cmd("set grid");
+plot.cmd("set key bottom left box opaque");
+plot.cmd("set title 'Push up (radially): a closed 2:1 loop, back every orbit'");
+plot.cmd("set xlabel 'along-track [m]  (+ = ahead of the station)'");
+plot.cmd("set ylabel 'radial [m]  (+ = up)'");
+plot.cmd("set size ratio -1");
+plot.cmd("set xrange [-4200:700]");
+plot.cmd("set xtics 1000");
+plot.cmd("set yrange [-1400:1400]");
+plot.cmd("set object 1 rect center 0,0 size 220,120 fc rgb '#1b2733' fillstyle solid front");
+plot.cmd("set label 1 'station' at 120,-160 front");
+plot.cmd("set arrow 1 from 0,0 to 0,500 lw 2 lc rgb '#d62728' front");
+plot.cmd("set label 2 '1 m/s' at 60,420 tc rgb '#d62728' front");
+plot.cmd("plot 'build/examples/rendezvous.txt' index 0 using 4:3 with lines lw 3 lc rgb '#1f77b4' title 'exact (lmspace, 3 orbits)', '' index 0 every 12 using 6:5 with points pt 6 ps 1.2 lc rgb '#ff7f0e' title 'Clohessy-Wiltshire'");
+plot.cmd("unset arrow 1");
+plot.cmd("unset label 2");
+plot.cmd("set title 'Push forward: climb, slow down, fall 16.7 km behind per orbit'");
+plot.cmd("set xlabel 'along-track [km]  (+ = ahead of the station)'");
+plot.cmd("set ylabel 'radial [km]  (+ = up)'");
+plot.cmd("set size noratio");
+plot.cmd("set xrange [-52:4]");
+plot.cmd("set xtics 10");
+plot.cmd("set yrange [-1:5]");
+plot.cmd("set object 1 rect center 0,0 size 1.6,0.25 fc rgb '#1b2733' fillstyle solid front");
+plot.cmd("set label 1 'station' at -1,-0.5 front");
+plot.cmd("set arrow 3 from 0,0 to 3,0 lw 2 lc rgb '#d62728' front");
+plot.cmd("set label 4 '1 m/s' at 0.5,0.4 tc rgb '#d62728' front");
+plot.cmd("set key top left box opaque");
+plot.cmd("plot 'build/examples/rendezvous.txt' index 1 using ($4/1000):($3/1000) with lines lw 3 lc rgb '#1f77b4' title 'exact (lmspace, 3 orbits)', '' index 1 every 12 using ($6/1000):($5/1000) with points pt 6 ps 1.2 lc rgb '#ff7f0e' title 'Clohessy-Wiltshire'");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_rendezvous-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_rendezvous-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/rendezvous.png");

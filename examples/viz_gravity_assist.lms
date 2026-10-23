@@ -1,0 +1,136 @@
+# Gravity assist at Jupiter. A spacecraft arrives on a Hohmann-like orbit from the inner solar system with
+# v_inf = 5.6 km/s relative to Jupiter and passes 6 Jupiter radii behind the planet. The Sun, Jupiter and the probe are
+# integrated together by lmspace (RK45); the past half of the trajectory is integrated with every velocity reversed.
+# In Jupiter's frame the flyby only turns the velocity (by delta = 2 asin(1 / (1 + rp v_inf^2 / mu_J)) = 129 deg),
+# but in the Sun's frame the probe leaves 10 km/s faster, almost at solar escape speed. The script asserts the
+# patched-conic prediction (turn angle, |delta v| = 2 v_inf sin(delta / 2)) against the three-body integration: they
+# agree within 2 deg and 5 % (the Sun keeps pulling during the 0.3-year encounter).
+# Output: images/gravity_assist.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+# units: AU, years, G * M_sun = 4 pi^2; 1 AU/yr = 4.7406 km/s
+let kms = 4.740470463533348;
+let mus = 39.47841760435743;
+let muj = mus / 1047.348644;
+let aj = 5.2026;
+let vj = sqrt((mus + muj) / aj);
+let rj = 71492.0 / 149597870.7;
+let rp = 6.0 * rj;
+let vinf = 5.6 / kms;
+let vp = sqrt(vinf * vinf + 2.0 * muj / rp);
+# closest approach: 6 R_J behind Jupiter (Jupiter moves along +y), moving in -x relative to Jupiter
+let x0 = aj;
+let y0 = 0.0 - rp;
+let vx0 = 0.0 - vp;
+let vy0 = vj;
+# barycentric start: the Sun recoils against Jupiter
+let sun = space.body("sun", mus, 0.0 - aj * muj / mus, 0.0, 0.0, 0.0, 0.0 - vj * muj / mus, 0.0);
+let jup = space.body("jupiter", muj, aj, 0.0, 0.0, 0.0, vj, 0.0);
+let sc = space.body("probe", 0.0000000000001, x0, y0, 0.0, vx0, vy0, 0.0);
+let after = space.system().add(sun).add(jup).add(sc).propagate(3.0, 3001, 0.0001, "rk45", 0.000000000001);
+let near_after = space.system().add(sun).add(jup).add(sc).propagate(0.04, 801, 0.00001, "rk45", 0.000000000001);
+# time reversal: flip every velocity and integrate forward again to get the approach leg
+let sunr = space.body("sun", mus, 0.0 - aj * muj / mus, 0.0, 0.0, 0.0, vj * muj / mus, 0.0);
+let jupr = space.body("jupiter", muj, aj, 0.0, 0.0, 0.0, 0.0 - vj, 0.0);
+let scr = space.body("probe", 0.0000000000001, x0, y0, 0.0, 0.0 - vx0, 0.0 - vy0, 0.0);
+let before = space.system().add(sunr).add(jupr).add(scr).propagate(3.0, 3001, 0.0001, "rk45", 0.000000000001);
+let near_before = space.system().add(sunr).add(jupr).add(scr).propagate(0.04, 801, 0.00001, "rk45", 0.000000000001);
+near_after.save_csv("build/examples/assist_near_after.csv");
+near_before.save_csv("build/examples/assist_near_before.csv");
+after.save_csv("build/examples/assist_after.csv");
+before.save_csv("build/examples/assist_before.csv");
+# velocities relative to Jupiter 0.3 years (about one sphere-of-influence crossing) before and after closest approach;
+# the reversed run's velocities flip back
+let ux = before.get(300, 10) - before.get(300, 16);
+let uy = before.get(300, 11) - before.get(300, 17);
+let wx = after.get(300, 16) - after.get(300, 10);
+let wy = after.get(300, 17) - after.get(300, 11);
+let k = 1.0 / (1.0 + rp * vinf * vinf / muj);
+# delta / 2 = asin(k): Newton's method on sin (the host has sin and cos but no asin)
+let half = 1.0;
+for (it in range(0, 30)) { half = half - (sin(half) - k) / cos(half); }
+let deg = 180.0 / 3.141592653589793;
+let costurn = (ux * wx + uy * wy) / sqrt((ux * ux + uy * uy) * (wx * wx + wy * wy));
+let dv = sqrt(pow(wx - ux, 2.0) + pow(wy - uy, 2.0)) * kms;
+let predicted = 2.0 * vinf * k * kms;
+print("turn angle predicted " + str(2.0 * half * deg) + " deg; v_inf in/out " + str(sqrt(ux * ux + uy * uy) * kms) + " / " + str(sqrt(wx * wx + wy * wy) * kms) + " km/s");
+print("velocity change: patched conic " + str(predicted) + " km/s, three-body integration " + str(dv) + " km/s");
+assert_close(2.0 * half * deg, 129.4, 0.5);
+assert_close(costurn, cos(2.0 * half), 0.04);
+assert_close(dv, predicted, 0.06 * predicted);
+# heliocentric speed and energy at the end of each leg (3 years out) (relative to the Sun)
+let rin = sqrt(pow(before.get(3000, 13) - before.get(3000, 1), 2.0) + pow(before.get(3000, 14) - before.get(3000, 2), 2.0));
+let rout = sqrt(pow(after.get(3000, 13) - after.get(3000, 1), 2.0) + pow(after.get(3000, 14) - after.get(3000, 2), 2.0));
+let hx = before.get(3000, 4) - before.get(3000, 16);
+let hy = before.get(3000, 5) - before.get(3000, 17);
+let gx = after.get(3000, 16) - after.get(3000, 4);
+let gy = after.get(3000, 17) - after.get(3000, 5);
+let ein = 0.5 * (hx * hx + hy * hy) - mus / rin;
+let eout = 0.5 * (gx * gx + gy * gy) - mus / rout;
+print("specific orbital energy " + str(ein) + " -> " + str(eout) + " AU^2/yr^2");
+# bound before the flyby, much less bound after it (the host has assert_close only)
+assert_close(min(ein, 0.0), ein, 0.0);
+assert_close(max(eout - ein, 5.0), eout - ein, 0.0);
+end _dsl_
+savedsl(sim, "build/viz_gravity_assist-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_gravity_assist-sim.dslb;
+println(r.stdout);
+assert(r.code == 0);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/gravity_assist.png", 1200, 820);
+plot.cmd("set datafile separator ','");
+plot.cmd("set multiplot title 'Gravity assist at Jupiter (lmspace, Sun + Jupiter + probe, RK45): v_{inf} = 5.6 km/s, closest approach 6 R_J' font ',15'");
+plot.cmd("kms = 4.740470463533348");
+plot.cmd("rj = 71492.0/149597870.7");
+plot.cmd("set origin 0,0.04");
+plot.cmd("set size 0.5,0.9");
+plot.cmd("set title 'Heliocentric view (AU)'");
+plot.cmd("set size ratio -1");
+plot.cmd("set grid");
+plot.cmd("set xrange [-7.5:7.5]");
+plot.cmd("set yrange [-7.5:7.5]");
+plot.cmd("set xlabel 'x [AU]'");
+plot.cmd("set ylabel 'y [AU]'");
+plot.cmd("set key bottom left box opaque");
+plot.cmd("set parametric");
+plot.cmd("set trange [0:2*pi]");
+plot.cmd("set samples 400");
+plot.cmd("set object 1 circle at 0,0 size 0.25 fc rgb '#ffcc00' fillstyle solid border rgb 'black' front");
+plot.cmd("set object 2 circle at 5.2026,0 size 0.14 fc rgb '#d2691e' fillstyle solid border rgb 'black' front");
+plot.cmd("set label 1 'Jupiter at flyby' at 5.0,-0.6 right front");
+plot.cmd("plot 5.2026*cos(t), 5.2026*sin(t) with lines dt 2 lc rgb '#7f7f7f' title \"Jupiter's orbit\", cos(t), sin(t) with lines dt 2 lc rgb '#2ca02c' title \"Earth's orbit\", 'build/examples/assist_before.csv' using 14:15 with lines lw 3 lc rgb '#1f77b4' title 'approach (3 yr)', 'build/examples/assist_after.csv' using 14:15 with lines lw 3 lc rgb '#d62728' title 'departure (3 yr)'");
+plot.cmd("unset object 1");
+plot.cmd("unset object 2");
+plot.cmd("unset label 1");
+plot.cmd("set origin 0.5,0.47");
+plot.cmd("set size 0.5,0.47");
+plot.cmd("set title \"Jupiter's frame: the hyperbola turns v_{inf} by 129 deg\"");
+plot.cmd("set xrange [-30:30]");
+plot.cmd("set yrange [-18:18]");
+plot.cmd("set xlabel 'x - x_J [R_J]'");
+plot.cmd("set ylabel 'y - y_J [R_J]'");
+plot.cmd("set key top right box opaque");
+plot.cmd("set object 3 circle at 0,0 size 1 fc rgb '#d2691e' fillstyle solid border rgb 'black' front");
+plot.cmd("plot 'build/examples/assist_near_before.csv' using (($14-$8)/rj):(($15-$9)/rj) with lines lw 3 lc rgb '#1f77b4' title 'in', 'build/examples/assist_near_after.csv' using (($14-$8)/rj):(($15-$9)/rj) with lines lw 3 lc rgb '#d62728' title 'out'");
+plot.cmd("unset object 3");
+plot.cmd("unset parametric");
+plot.cmd("set origin 0.5,0.04");
+plot.cmd("set size 0.5,0.43");
+plot.cmd("set size noratio");
+plot.cmd("set title 'Speed relative to the Sun'");
+plot.cmd("set xrange [-3:3]");
+plot.cmd("set yrange [0:32]");
+plot.cmd("set xlabel 'time from closest approach [years]'");
+plot.cmd("set ylabel 'km/s'");
+plot.cmd("set key bottom right box opaque");
+plot.cmd("plot 'build/examples/assist_before.csv' using (-$1):(kms*sqrt(($17-$5)**2+($18-$6)**2)) with lines lw 3 lc rgb '#1f77b4' title 'probe speed', 'build/examples/assist_after.csv' using 1:(kms*sqrt(($17-$5)**2+($18-$6)**2)) with lines lw 3 lc rgb '#d62728' notitle, 'build/examples/assist_before.csv' using (-$1):(kms*sqrt(2*39.47841760435743/sqrt(($14-$2)**2+($15-$3)**2))) with lines dt 2 lw 2 lc rgb 'black' title 'solar escape speed', 'build/examples/assist_after.csv' using 1:(kms*sqrt(2*39.47841760435743/sqrt(($14-$2)**2+($15-$3)**2))) with lines dt 2 lw 2 lc rgb 'black' notitle");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_gravity_assist-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_gravity_assist-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/gravity_assist.png");

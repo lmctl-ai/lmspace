@@ -1,0 +1,106 @@
+# A path-traced picture of the inner Solar System on 1 January 2000. lmspace turns each planet's J2000 mean elements
+# (JPL, Standish) into a state, solves Kepler's equation, and samples the full orbit (State.propagate). The orbits are
+# real 3D curves: Mercury's 7 deg tilt and the eccentric Mercury and Mars orbits are visible against the near-circular
+# ones of Venus and Earth. lmblender (Cycles) renders the orbits as glowing tubes, the planets as spheres (sizes
+# exaggerated about 1000 times) and the Sun as an emissive sphere that lights them. The script asserts the orbit
+# shapes: perihelion and aphelion of every planet from its sampled orbit equal a (1 - e) and a (1 + e).
+# Output: images/solar_system_3d.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 0.01720209895 * 0.01720209895;
+let deg = 0.017453292519943295;
+let s = 2.0;
+for (p in range(0, 4)) {
+  let a = 0.38709927; let e = 0.20563593; let i = 7.00497902; let L = 252.25032350; let w = 77.45779628; let O = 48.33076593;
+  if (p == 1) { a = 0.72333566; e = 0.00677672; i = 3.39467605; L = 181.97909950; w = 131.60246718; O = 76.67984255; }
+  if (p == 2) { a = 1.00000261; e = 0.01671123; i = 0.00001531; L = 100.46457166; w = 102.93768193; O = 0.0; }
+  if (p == 3) { a = 1.52371034; e = 0.09339410; i = 1.84969142; L = -4.55343205; w = -23.94362959; O = 49.55953891; }
+  let E = kepler((L - w) * deg, e);
+  let sy = sqrt(1.0 - e * e) * sin(E);
+  let sx = cos(E) - e;
+  let nu = E;
+  for (it in range(0, 8)) { nu = nu + (sy * cos(nu) - sx * sin(nu)) / (sx * cos(nu) + sy * sin(nu)); }
+  let st = elements(a, e, i * deg, O * deg, (w - O) * deg, nu).to_state(mu);
+  let T = period(a, mu);
+  let path = "";
+  let rmin = 100.0;
+  let rmax = 0.0;
+  for (k in range(0, 241)) {
+    let q = st.propagate(mu, T * float(k) / 240.0).position();
+    let r = sqrt(q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
+    rmin = min(rmin, r);
+    rmax = max(rmax, r);
+    if (k > 0) { path = path + "; "; }
+    path = path + str(s * q.x()) + "," + str(s * q.y()) + "," + str(s * q.z());
+  }
+  assert_close(rmin, a * (1.0 - e), 0.002 * a);
+  assert_close(rmax, a * (1.0 + e), 0.002 * a);
+  let now = st.position();
+  # print plain decimals (Earth's z is ~1e-7, which would print in exponent form)
+  let nx = floor(s * now.x() * 100000.0) / 100000.0;
+  let ny = floor(s * now.y() * 100000.0) / 100000.0;
+  let nz = floor(s * now.z() * 100000.0) / 100000.0;
+  print("orbit|" + path);
+  print("planet|" + str(nx) + "|" + str(ny) + "|" + str(nz));
+}
+end _dsl_
+savedsl(sim, "build/render_solar_system-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/render_solar_system-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+lines = csv_parse("kind|a|b|c\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, "|");
+o0 = lines.get(0, null).get("a", "");
+o1 = lines.get(2, null).get("a", "");
+o2 = lines.get(4, null).get("a", "");
+o3 = lines.get(6, null).get("a", "");
+p = [];
+for (k in range(0, 4)) {
+  m = lines.get(2 * k + 1, null);
+  push(p, [0.0 + m.get("a", 0.0) + 0.000001, 0.0 + m.get("b", 0.0) + 0.000001, 0.0 + m.get("c", 0.0) + 0.000001]);
+}
+x0 = p.get(0, []).get(0, 0.0); y0 = p.get(0, []).get(1, 0.0); z0 = p.get(0, []).get(2, 0.0);
+x1 = p.get(1, []).get(0, 0.0); y1 = p.get(1, []).get(1, 0.0); z1 = p.get(1, []).get(2, 0.0);
+x2 = p.get(2, []).get(0, 0.0); y2 = p.get(2, []).get(1, 0.0); z2 = p.get(2, []).get(2, 0.0);
+x3 = p.get(3, []).get(0, 0.0); y3 = p.get(3, []).get(1, 0.0); z3 = p.get(3, []).get(2, 0.0);
+
+b = _dsl_ cli="lmblender" install="github:lmctl-ai/lmblender@latest";
+scene.world_color(0.006, 0.008, 0.014, 1.0);
+let sun = scene.glow_orb(0.0, 0.0, 0.0, 0.2, 1.0, 0.8, 0.45, 60.0);
+let c0 = scene.material(0.6, 0.6, 0.62, 0.0, 0.5, 0.0, 0.55, 0.55, 0.6, 1.2);
+let c1 = scene.material(0.9, 0.75, 0.45, 0.0, 0.5, 0.0, 0.9, 0.7, 0.35, 1.2);
+let c2 = scene.material(0.3, 0.6, 1.0, 0.0, 0.5, 0.0, 0.25, 0.55, 1.0, 1.4);
+let c3 = scene.material(1.0, 0.4, 0.25, 0.0, 0.5, 0.0, 1.0, 0.35, 0.2, 1.2);
+let t0 = scene.strand(${o0}, 0.012, 0.012, 8);
+t0.set_material(c0);
+let t1 = scene.strand(${o1}, 0.012, 0.012, 8);
+t1.set_material(c1);
+let t2 = scene.strand(${o2}, 0.012, 0.012, 8);
+t2.set_material(c2);
+let t3 = scene.strand(${o3}, 0.012, 0.012, 8);
+t3.set_material(c3);
+let m0 = scene.material(0.55, 0.53, 0.5, 0.0, 0.7, 0.0, 0.0, 0.0, 0.0, 0.0);
+let m1 = scene.material(0.95, 0.82, 0.55, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0);
+let m2 = scene.material(0.15, 0.35, 0.85, 0.0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0);
+let m3 = scene.material(0.85, 0.35, 0.18, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0);
+let s0 = scene.uv_sphere(0.06, 32, 16, true);
+s0.set_material(m0);
+s0.translate(${x0}, ${y0}, ${z0});
+let s1 = scene.uv_sphere(0.11, 32, 16, true);
+s1.set_material(m1);
+s1.translate(${x1}, ${y1}, ${z1});
+let s2 = scene.uv_sphere(0.115, 32, 16, true);
+s2.set_material(m2);
+s2.translate(${x2}, ${y2}, ${z2});
+let s3 = scene.uv_sphere(0.085, 32, 16, true);
+s3.set_material(m3);
+s3.translate(${x3}, ${y3}, ${z3});
+scene.camera_look_at(0.8, -7.0, 2.4, 0.0, 0.0, -0.1, 34.0);
+scene.render_settings(6, 0, true);
+scene.render_png("images/solar_system_3d.png", 160, 1000, 560);
+end _dsl_
+savedsl(b, "build/render_solar_system-render.dslb");
+r = system ${dsl_cli(b)} --dsl build/render_solar_system-render.dslb;
+if (r.code != 0) { println(r.stdout); println(r.stderr); }
+assert(r.code == 0);
+println("wrote images/solar_system_3d.png");

@@ -63,10 +63,12 @@ plot.cmd("set xlabel 'x'");
 plot.cmd("set ylabel 'y'");
 plot.cmd("set size ratio -1");
 plot.cmd("set grid");
-plot.cmd("set key top right box opaque");
+plot.cmd("set key bottom left box opaque");
 plot.cmd("set object 1 circle at 0,0 size 0.08 fc rgb '#ffcc00' fillstyle solid border rgb 'black'");
-plot.cmd("set label 1 'start' at 1.03,-0.1");
-plot.cmd("set label 2 'target' at -0.45,1.25");
+plot.cmd("set yrange [-0.2:1.95]");
+plot.cmd("set xrange [-0.7:1.4]");
+plot.cmd("set label 1 'start' at 1.04,-0.1");
+plot.cmd("set label 2 'target' at -0.62,1.32");
 plot.cmd("plot 'build/examples/lambert_l1.csv' using 8:9 with lines lw 3 lc rgb '#1f77b4' title 'flight time 1.2', 'build/examples/lambert_l2.csv' using 8:9 with lines lw 3 lc rgb '#2ca02c' title 'flight time 1.8', 'build/examples/lambert_l3.csv' using 8:9 with lines lw 3 lc rgb '#ff7f0e' title 'flight time 2.6', 'build/examples/lambert_l4.csv' using 8:9 with lines lw 3 lc rgb '#d62728' title 'flight time 3.8', 'build/examples/lambert_l5.csv' using 8:9 with lines lw 3 lc rgb '#9467bd' title 'flight time 5.5', 'build/examples/lambert_l1.csv' every ::0::0 using 8:9 with points pt 7 ps 2 lc rgb 'black' notitle, '' every ::299::299 using 8:9 with points pt 9 ps 2 lc rgb 'black' notitle");
 plot.close();
 end _dsl_

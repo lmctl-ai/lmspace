@@ -1,0 +1,151 @@
+# From a 200 km parking orbit to a 100 km lunar orbit, like an Apollo mission. Trans-lunar injection raises the
+# perigee speed to 10.92 km/s (a 3.14 km/s burn); the script then searches, by bisection, the Moon's lead angle at
+# departure for which the Earth + Moon + spacecraft N-body integration (lmspace RK45) passes 100 km above the lunar
+# surface. At that periapsis it fires the lunar-orbit-insertion burn (slowing to circular speed around the Moon) and
+# follows the spacecraft for two more days. Asserts: TLI 3.1 km/s, coast 3 to 5 days, LOI 0.8 to 1.0 km/s, and the
+# spacecraft stays in a near-circular 100 km lunar orbit. lmplot shows the trip from Earth and from the Moon.
+# Output: images/lunar_transfer.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mue = 398600.4418;
+let mum = 4902.800066;
+let dm = 384400.0;
+let w = sqrt((mue + mum) / pow(dm, 3.0));
+let fe = mum / (mue + mum);
+let r0 = 6578.137;
+let v0 = 10.92;
+let target = 1737.4 + 100.0;
+let tli = v0 - sqrt(mue / r0);
+let lo = 120.0 * 0.017453292519943295;
+let hi = 124.0 * 0.017453292519943295;
+let rows = 8001;
+let span = 5.0 * 86400.0;
+let peri_row = 0;
+let peri_r = 0.0;
+for (it in range(0, 32)) {
+  let phi = 0.5 * (lo + hi);
+  # barycentric circular Earth-Moon pair; the Moon leads the spacecraft's perigee direction (+x) by phi
+  let earth = space.body("earth", mue, 0.0 - dm * fe * cos(phi), 0.0 - dm * fe * sin(phi), 0.0, w * dm * fe * sin(phi), 0.0 - w * dm * fe * cos(phi), 0.0);
+  let moon = space.body("moon", mum, dm * (1.0 - fe) * cos(phi), dm * (1.0 - fe) * sin(phi), 0.0, 0.0 - w * dm * (1.0 - fe) * sin(phi), w * dm * (1.0 - fe) * cos(phi), 0.0);
+  let sc = space.body("craft", 0.000000001, 0.0 - dm * fe * cos(phi) + r0, 0.0 - dm * fe * sin(phi), 0.0, w * dm * fe * sin(phi), 0.0 - w * dm * fe * cos(phi) + v0, 0.0);
+  let out = space.system().add(earth).add(moon).add(sc).propagate(span, rows, 10.0, "rk45", 0.0000000001);
+  # periapsis about the Moon: first sign change of (r - r_moon) . (v - v_moon) from - to +
+  let found = 0;
+  let prev = -1.0;
+  let pr = 0.0;
+  for (k in range(1, rows)) {
+    if (found == 0) {
+      let dx = out.get(k, 13) - out.get(k, 7);
+      let dy = out.get(k, 14) - out.get(k, 8);
+      let rv = dx * (out.get(k, 16) - out.get(k, 10)) + dy * (out.get(k, 17) - out.get(k, 11));
+      let r = sqrt(dx * dx + dy * dy);
+      if (prev < 0.0 && rv >= 0.0 && r < 60000.0) {
+        found = 1;
+        peri_row = k;
+        if (pr < r) { peri_row = k - 1; }
+        peri_r = min(r, pr);
+      }
+      prev = rv;
+      pr = r;
+    }
+  }
+  # a larger lead angle brings the Moon in sooner, so the spacecraft passes closer
+  if (peri_r > target) { lo = phi; } else { hi = phi; }
+}
+let phi = 0.5 * (lo + hi);
+let earth = space.body("earth", mue, 0.0 - dm * fe * cos(phi), 0.0 - dm * fe * sin(phi), 0.0, w * dm * fe * sin(phi), 0.0 - w * dm * fe * cos(phi), 0.0);
+let moon = space.body("moon", mum, dm * (1.0 - fe) * cos(phi), dm * (1.0 - fe) * sin(phi), 0.0, 0.0 - w * dm * (1.0 - fe) * sin(phi), w * dm * (1.0 - fe) * cos(phi), 0.0);
+let sc = space.body("craft", 0.000000001, 0.0 - dm * fe * cos(phi) + r0, 0.0 - dm * fe * sin(phi), 0.0, w * dm * fe * sin(phi), 0.0 - w * dm * fe * cos(phi) + v0, 0.0);
+let out = space.system().add(earth).add(moon).add(sc).propagate(span, rows, 10.0, "rk45", 0.0000000001);
+out.save_csv("build/examples/lunar_coast.csv");
+# refine the periapsis: restart one output step before it and sample the next two steps every 0.1 s
+let k0 = peri_row - 1;
+let ea = space.body("earth", mue, out.get(k0, 1), out.get(k0, 2), 0.0, out.get(k0, 4), out.get(k0, 5), 0.0);
+let ma = space.body("moon", mum, out.get(k0, 7), out.get(k0, 8), 0.0, out.get(k0, 10), out.get(k0, 11), 0.0);
+let ca = space.body("craft", 0.000000001, out.get(k0, 13), out.get(k0, 14), 0.0, out.get(k0, 16), out.get(k0, 17), 0.0);
+let step = span / float(rows - 1);
+let fine = space.system().add(ea).add(ma).add(ca).propagate(2.0 * step, 1081, 0.1, "rk45", 0.0000000001);
+let k = 0;
+let best = 1000000000.0;
+for (j in range(0, 1081)) {
+  let d = sqrt(pow(fine.get(j, 13) - fine.get(j, 7), 2.0) + pow(fine.get(j, 14) - fine.get(j, 8), 2.0));
+  if (d < best) { best = d; k = j; }
+}
+# lunar orbit insertion at periapsis: keep the direction, slow to circular speed relative to the Moon
+let rx = fine.get(k, 13) - fine.get(k, 7);
+let ry = fine.get(k, 14) - fine.get(k, 8);
+let ux = fine.get(k, 16) - fine.get(k, 10);
+let uy = fine.get(k, 17) - fine.get(k, 11);
+let rr = sqrt(rx * rx + ry * ry);
+let vrel = sqrt(ux * ux + uy * uy);
+let vc = sqrt(mum / rr);
+let loi = vrel - vc;
+let tp = out.get(k0, 0) + fine.get(k, 0);
+let e2 = space.body("earth", mue, fine.get(k, 1), fine.get(k, 2), 0.0, fine.get(k, 4), fine.get(k, 5), 0.0);
+let m2 = space.body("moon", mum, fine.get(k, 7), fine.get(k, 8), 0.0, fine.get(k, 10), fine.get(k, 11), 0.0);
+let c2 = space.body("craft", 0.000000001, fine.get(k, 13), fine.get(k, 14), 0.0, fine.get(k, 10) + ux * vc / vrel, fine.get(k, 11) + uy * vc / vrel, 0.0);
+let orbit = space.system().add(e2).add(m2).add(c2).propagate(2.0 * 86400.0, 2001, 5.0, "rk45", 0.0000000001);
+orbit.save_csv("build/examples/lunar_orbit.csv");
+let rmin = 1000000000.0;
+let rmax = 0.0;
+for (j in range(0, 2001)) {
+  let d = sqrt(pow(orbit.get(j, 13) - orbit.get(j, 7), 2.0) + pow(orbit.get(j, 14) - orbit.get(j, 8), 2.0));
+  rmin = min(rmin, d);
+  rmax = max(rmax, d);
+}
+print("Moon lead angle " + str(phi * 57.29577951308232) + " deg; periapsis " + str(rr - 1737.4) + " km above the Moon after " + str(tp / 86400.0) + " days");
+print("TLI " + str(tli) + " km/s, LOI " + str(loi) + " km/s; lunar orbit altitude " + str(rmin - 1737.4) + " to " + str(rmax - 1737.4) + " km");
+print("tp " + str(tp));
+assert_close(tli, 3.136, 0.01);
+assert_close(rr, target, 3.0);
+assert_close(tp / 86400.0, 4.0, 1.0);
+assert_close(loi, 0.9, 0.1);
+assert_close(rmin - 1737.4, 100.0, 15.0);
+assert_close(rmax - 1737.4, 100.0, 15.0);
+end _dsl_
+savedsl(sim, "build/viz_lunar_transfer-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_lunar_transfer-sim.dslb;
+println(r.stdout);
+assert(r.code == 0);
+tp = regex_replace(regex_replace(r.stdout, "^.*\ntp ", "", "s"), "\n.*$", "", "s");
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/lunar_transfer.png", 1200, 680);
+plot.cmd("set datafile separator ','");
+plot.cmd("tp = " + ${tp});
+plot.cmd("set multiplot title 'Earth to a 100 km lunar orbit (lmspace: Earth + Moon + spacecraft, RK45; Moon lead angle found by bisection)' font ',14'");
+plot.cmd("set origin 0,0");
+plot.cmd("set size 0.5,0.93");
+plot.cmd("set title 'Seen from Earth (1000 km, Earth-centred)'");
+plot.cmd("set size ratio -1");
+plot.cmd("set grid");
+plot.cmd("set xlabel 'x [1000 km]'");
+plot.cmd("set ylabel 'y [1000 km]'");
+plot.cmd("set xrange [-420:420]");
+plot.cmd("set yrange [-200:420]");
+plot.cmd("set label 1 'Moon at TLI' at -200,345 left front");
+plot.cmd("set label 2 'Earth' at 15,-25 left front");
+plot.cmd("set key bottom right box opaque");
+plot.cmd("set object 1 circle at 0,0 size 6.378 fc rgb '#3b7dd8' fillstyle solid front");
+plot.cmd("plot 'build/examples/lunar_coast.csv' using (($8-$2)/1000):(($9-$3)/1000) with lines dt 2 lw 1.5 lc rgb '#7f7f7f' title 'Moon, 5 days', '' using ($1 <= tp ? ($14-$2)/1000 : NaN):(($15-$3)/1000) with lines lw 3 lc rgb '#d62728' title 'coast after TLI (3.1 km/s)', 'build/examples/lunar_orbit.csv' using (($14-$2)/1000):(($15-$3)/1000) with lines lw 3 lc rgb '#2ca02c' title 'after LOI (0.83 km/s)', 'build/examples/lunar_orbit.csv' every ::0::0 using (($8-$2)/1000):(($9-$3)/1000) with points pt 7 ps 2 lc rgb '#9a9a9a' title 'Moon at arrival'");
+plot.cmd("unset object 1");
+plot.cmd("unset label");
+plot.cmd("set origin 0.5,0");
+plot.cmd("set size 0.5,0.93");
+plot.cmd("set title 'Seen from the Moon (Moon-centred, km)'");
+plot.cmd("set xlabel 'x - x_{Moon} [km]'");
+plot.cmd("set ylabel 'y - y_{Moon} [km]'");
+plot.cmd("set xrange [-6000:6000]");
+plot.cmd("set yrange [-6000:6000]");
+plot.cmd("set key top left box opaque");
+plot.cmd("set object 2 circle at 0,0 size 1737.4 fc rgb '#bdbdbd' fillstyle solid front");
+plot.cmd("plot 'build/examples/lunar_coast.csv' using ($1 <= tp ? $14-$8 : NaN):($15-$9) with lines lw 3 lc rgb '#d62728' title 'approach hyperbola', 'build/examples/lunar_orbit.csv' using ($14-$8):($15-$9) with lines lw 3 lc rgb '#2ca02c' title '100 km lunar orbit, 2 days', 'build/examples/lunar_orbit.csv' every ::0::0 using ($14-$8):($15-$9) with points pt 7 ps 1.6 lc rgb 'black' title 'LOI burn'");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_lunar_transfer-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_lunar_transfer-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/lunar_transfer.png");

@@ -38,6 +38,7 @@ plot.cmd("set key outside bottom center horizontal");
 plot.cmd("set label 1 'burn 1 (perigee)' at 8.5,-2.5");
 plot.cmd("set label 2 'burn 2 (apogee)' at -40.5,-3");
 plot.cmd("set parametric");
+plot.cmd("set samples 400");
 plot.cmd("set trange [0:2*pi]");
 plot.cmd("set xrange [-48:48]");
 plot.cmd("set yrange [-47:47]");

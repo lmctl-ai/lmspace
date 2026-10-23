@@ -1,0 +1,104 @@
+# Designing a sun-synchronous orbit. Earth's equatorial bulge (J2) makes an orbit's plane precess; pick the
+# inclination so the plane turns 360 deg per year, and the satellite crosses every latitude at the same local solar
+# time, which is what Earth-observation missions want. The precession rate is dOmega/dt = -3/2 n J2 (R/a)^2 cos i;
+# lmspace's period() gives the mean motion n. The script solves for the inclination at every altitude from 200 km
+# up, by bisection, and asserts the known designs: Landsat 8/9 at 705 km fly 98.2 deg, Sentinel-2 at 786 km about 98.6 deg,
+# and no sun-synchronous orbit exists above about 5970 km (it would need cos i < -1). The second panel shows how
+# fast orbits at 400 and 800 km precess against inclination; the ISS (400 km, 51.6 deg) regresses 5 deg a day.
+# Output: images/sun_synchronous.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let re = 6378.137;
+let j2 = 0.00108263;
+let deg = 0.017453292519943295;
+let year = 365.2422 * 86400.0;
+let need = 6.283185307179586 / year;
+let top = 0.0;
+for (k in range(0, 121)) {
+  let h = 200.0 + 50.0 * float(k);
+  let a = re + h;
+  let n = 6.283185307179586 / period(a, mu);
+  let c = 0.0 - need / (1.5 * n * j2 * pow(re / a, 2.0));
+  if (c >= -1.0) {
+    # i = acos(c) by bisection on [90, 180] deg
+    let lo = 90.0;
+    let hi = 180.0;
+    for (it in range(0, 60)) {
+      let mid = 0.5 * (lo + hi);
+      if (cos(mid * deg) > c) { lo = mid; } else { hi = mid; }
+    }
+    top = h;
+    print("ss " + str(h) + " " + str(lo));
+    if (h == 700.0) { assert_close(lo, 98.19, 0.03); }
+  }
+}
+# spot checks at the exact mission altitudes
+for (m in range(0, 2)) {
+  let h = 705.0;
+  let want = 98.21;
+  if (m == 1) { h = 786.0; want = 98.6; }
+  let a = re + h;
+  let n = 6.283185307179586 / period(a, mu);
+  let c = 0.0 - need / (1.5 * n * j2 * pow(re / a, 2.0));
+  let lo = 90.0;
+  let hi = 180.0;
+  for (it in range(0, 60)) {
+    let mid = 0.5 * (lo + hi);
+    if (cos(mid * deg) > c) { lo = mid; } else { hi = mid; }
+  }
+  print("mission " + str(h) + " " + str(lo));
+  assert_close(lo, want, 0.1);
+}
+assert_close(top, 5950.0, 0.0);
+# nodal regression in deg/day against inclination, at 400 and 800 km
+for (k in range(0, 181)) {
+  let i = float(k);
+  let a4 = re + 400.0;
+  let a8 = re + 800.0;
+  let r4 = -1.5 * (6.283185307179586 / period(a4, mu)) * j2 * pow(re / a4, 2.0) * cos(i * deg) * 86400.0 / deg;
+  let r8 = -1.5 * (6.283185307179586 / period(a8, mu)) * j2 * pow(re / a8, 2.0) * cos(i * deg) * 86400.0 / deg;
+  print("rate " + str(i) + " " + str(r4) + " " + str(r8));
+  if (k == 52) { assert_close(r4, -5.0, 0.1); }
+}
+end _dsl_
+savedsl(sim, "build/viz_sun_synchronous-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_sun_synchronous-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+write_file("build/examples/sunsync.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/sun_synchronous.png", 1200, 560);
+plot.cmd("set multiplot layout 1,2 title 'Sun-synchronous orbits: let J2 turn the orbit plane once a year (lmspace)' font ',14'");
+plot.cmd("set grid");
+plot.cmd("set title 'Inclination needed for a sun-synchronous orbit'");
+plot.cmd("set xlabel 'altitude [km]'");
+plot.cmd("set ylabel 'inclination [deg]'");
+plot.cmd("set xrange [0:6500]");
+plot.cmd("set yrange [92:182]");
+plot.cmd("unset key");
+plot.cmd("set label 1 'Landsat 8/9, Terra (705 km)' at 705,98.2 point pt 7 ps 1.4 lc rgb '#d62728' offset 1,0.2 front");
+plot.cmd("set label 2 'Sentinel-2 (786 km)' at 786,98.54 point pt 9 ps 1.6 lc rgb '#2ca02c' offset 1,1.4 front");
+plot.cmd("set label 3 'no solution above about 5970 km (cos i < -1)' at 300,176 left front");
+plot.cmd("plot 'build/examples/sunsync.txt' using (strcol(1) eq 'ss' ? $2 : NaN):3 with lines lw 3 lc rgb '#1f77b4' title 'required inclination'");
+plot.cmd("unset label");
+plot.cmd("set title 'How fast the orbit plane turns (J2)'");
+plot.cmd("set xlabel 'inclination [deg]'");
+plot.cmd("set ylabel 'node drift [deg/day]'");
+plot.cmd("set xrange [0:180]");
+plot.cmd("set xtics 30");
+plot.cmd("set yrange [-9:9]");
+plot.cmd("set key top left box opaque");
+plot.cmd("set label 4 'ISS: -5.0 deg/day' at 51.6,-5.0 point pt 7 ps 1.4 lc rgb '#d62728' offset 1.2,-0.8 front");
+plot.cmd("set label 5 'dashed: +0.9856 deg/day = sun-synchronous' at 175,-7.5 right front");
+plot.cmd("plot 'build/examples/sunsync.txt' using (strcol(1) eq 'rate' ? $2 : NaN):3 with lines lw 3 lc rgb '#1f77b4' title '400 km', '' using (strcol(1) eq 'rate' ? $2 : NaN):4 with lines lw 3 lc rgb '#ff7f0e' title '800 km', 0.9856 with lines dt 2 lw 2 lc rgb 'black' notitle");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_sun_synchronous-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_sun_synchronous-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/sun_synchronous.png");

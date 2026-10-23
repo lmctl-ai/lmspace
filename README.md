@@ -6,45 +6,75 @@
 [![Latest release](https://img.shields.io/github/v/release/lmctl-ai/lmspace?label=release)](https://github.com/lmctl-ai/lmspace/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-### Many bodies and Kepler orbits
+### Missions and transfers
 
-| ![viz_figure_eight](docs/images/figure_eight.png) | ![anim_figure_eight](docs/images/figure_eight.gif) |
+| ![viz_lunar_transfer](docs/images/lunar_transfer.png) | ![viz_gravity_assist](docs/images/gravity_assist.png) |
 | --- | --- |
-| The figure-eight three-body orbit: three equal masses chase each other on one curve.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_figure_eight.lms` | The same orbit, animated (needs ffmpeg).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/anim_figure_eight.lms` |
+| Earth to a 100 km lunar orbit: 3.14 km/s TLI, 3.9-day coast, 0.83 km/s insertion; the Moon's lead angle found by bisection.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lunar_transfer.lms` | Jupiter flyby: the hyperbola turns v-infinity by 129 deg and the probe leaves 10 km/s faster, as patched conics predict.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_gravity_assist.lms` |
 
-| ![viz_trojans](docs/images/trojans.png) | ![orbit_csv](docs/images/binary_orbit.png) |
+| ![viz_delta_v_map](docs/images/delta_v_map.png) | ![viz_rendezvous](docs/images/rendezvous.png) |
 | --- | --- |
-| Trojan asteroids librate around Jupiter's L4 point in the rotating frame.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_trojans.lms` | Equal-mass binary, one period, closed form checked.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/orbit_csv.lms` |
+| Delta-v "subway map" of the Earth-Moon-Mars neighbourhood; every edge computed (Hohmann, vis-viva, patched conics).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_delta_v_map.lms` | A 1 m/s push next to a space station: up gives a closed loop, forward makes you fall 16.7 km behind (Clohessy-Wiltshire check).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_rendezvous.lms` |
 
-| ![viz_halley](docs/images/halley.png) | ![viz_second_law](docs/images/second_law.png) |
+| ![viz_porkchop](docs/images/porkchop.png) | ![viz_hohmann](docs/images/hohmann.png) |
 | --- | --- |
-| Halley's comet: 75 years, 54.5 km/s at perihelion, 0.9 km/s at aphelion.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_halley.lms` | Kepler's second law: 24 equal time steps sweep 24 equal areas.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_second_law.lms` |
-
-### Transfers
-
-| ![viz_hohmann](docs/images/hohmann.png) | ![transfers](docs/images/hohmann_sweep.png) |
-| --- | --- |
-| Hohmann transfer from low orbit to geostationary radius.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_hohmann.lms` | Hohmann delta-v and flight time against target radius; Lambert check.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/transfers.lms` |
+| Earth to Mars porkchop plot: delta-v of 1240 Lambert transfers; the minimum is the 5.6 km/s Hohmann window.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_porkchop.lms` | Hohmann transfer from low orbit to geostationary radius, propagated and checked against both burns.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_hohmann.lms` |
 
 | ![viz_bielliptic](docs/images/bielliptic.png) | ![viz_lambert](docs/images/lambert.png) |
 | --- | --- |
-| Hohmann against bi-elliptic transfers: the textbook crossovers at 11.94 and 15.58.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_bielliptic.lms` | Lambert arcs between two fixed points for five flight times.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lambert.lms` |
+| Hohmann against bi-elliptic transfers: the textbook crossovers at radius ratios 11.94 and 15.58.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_bielliptic.lms` | Lambert arcs between two fixed points for five flight times.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lambert.lms` |
 
-| ![viz_porkchop](docs/images/porkchop.png) | |
+| ![transfers](docs/images/hohmann_sweep.png) |  |
 | --- | --- |
-| Earth to Mars porkchop plot: delta-v of 1900 Lambert transfers.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_porkchop.lms` | |
+| Hohmann delta-v and flight time against target radius; Lambert check.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/transfers.lms` |  |
 
-### Geometry and numerics
+### Earth orbits
 
-| ![viz_orbits_3d](docs/images/orbits_3d.png) | ![viz_orbit_elements](docs/images/orbit_elements.png) |
+| ![viz_ground_tracks](docs/images/ground_tracks.png) | ![viz_sun_synchronous](docs/images/sun_synchronous.png) |
 | --- | --- |
-| Four Earth orbits from classical elements: equatorial, ISS-like, sun-synchronous, GPS.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbits_3d.lms` | One orbit in numbers: a, b, a e, true anomaly and velocity from lmspace (lmdraw).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbit_elements.lms` |
+| Ground tracks of the ISS, a sun-synchronous orbit, Molniya and GPS over one sidereal day, on a Natural Earth map (lmdraw).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_ground_tracks.lms` | Sun-synchronous design: the J2 inclination for every altitude (Landsat 98.2 deg at 705 km) and node drift rates.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_sun_synchronous.lms` |
 
-| ![viz_energy_error](docs/images/energy_error.png) | |
+| ![viz_eclipse](docs/images/eclipse.png) | ![viz_orbit_determination](docs/images/orbit_determination.png) |
 | --- | --- |
-| Energy error over 50 eccentric orbits: leapfrog against adaptive RK45.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_energy_error.lms` | |
+| Minutes in Earth's shadow against the beta angle: ISS 36 min at most, GEO only near the equinoxes (lmdraw).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_eclipse.lms` | Orbit from three radar fixes (Gibbs' method): 300 noisy fits per spacing; error drops 1000-fold as fixes spread.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbit_determination.lms` |
 
-Every picture is made by the script named under it: it runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot) or [lmdraw](https://github.com/lmctl-ai/lmdraw) and writes `images/` into the current directory. `examples/render-all.sh` regenerates `docs/images/`.
+| ![viz_spice_time](docs/images/spice_time.png) | ![viz_orbits_3d](docs/images/orbits_3d.png) |
+| --- | --- |
+| SPICE with NAIF kernels: 27 leap seconds since 1972, and the sidereal day from the IAU_EARTH frame.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_spice_time.lms` | Four Earth orbits from classical elements: equatorial, ISS-like, sun-synchronous, GPS.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbits_3d.lms` |
+
+### Three bodies and more
+
+| ![viz_halo_orbits](docs/images/halo_orbits.png) | ![viz_lagrange](docs/images/lagrange.png) |
+| --- | --- |
+| Earth-Moon L1 and L2 halo orbits by differential correction; from Earth the L2 halo never hides behind the Moon.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_halo_orbits.lms` | Lagrange points and zero-velocity curves; a particle at L1 escapes within weeks, one near L4 stays.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_lagrange.lms` |
+
+| ![viz_three_body_zoo](docs/images/three_body_zoo.png) | ![anim_figure_eight](docs/images/figure_eight.gif) |
+| --- | --- |
+| Six periodic three-body orbits from Suvakov and Dmitrasinovic (2013), each closing after one period.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_three_body_zoo.lms` | The figure-eight choreography: three equal masses chase each other on one curve (needs ffmpeg).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/anim_figure_eight.lms` |
+
+| ![viz_trojans](docs/images/trojans.png) | ![viz_figure_eight](docs/images/figure_eight.png) |
+| --- | --- |
+| Trojan asteroids librate around Jupiter's L4 point in the rotating frame.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_trojans.lms` | The figure-eight orbit integrated for one period with RK45.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_figure_eight.lms` |
+
+### The Solar System and Kepler's laws
+
+| ![anim_solar_system](docs/images/solar_system.gif) | ![render_solar_system](docs/images/solar_system_3d.png) |
+| --- | --- |
+| 800 days of the inner planets from J2000 elements; Mars turns backwards in our sky at the June 2001 opposition (needs ffmpeg).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/anim_solar_system.lms` | The inner planets' orbits as real 3D curves, path-traced by lmblender (Cycles).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/render_solar_system.lms` |
+
+| ![viz_halley](docs/images/halley.png) | ![viz_second_law](docs/images/second_law.png) |
+| --- | --- |
+| Halley's comet: 75 years, 54.5 km/s at perihelion, 0.9 km/s at aphelion beyond Neptune.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_halley.lms` | Kepler's second law: 24 equal time steps sweep 24 equal areas.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_second_law.lms` |
+
+| ![viz_orbit_elements](docs/images/orbit_elements.png) | ![viz_energy_error](docs/images/energy_error.png) |
+| --- | --- |
+| One orbit in numbers: a, b, a e, true anomaly and velocity from lmspace (lmdraw).<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_orbit_elements.lms` | Energy error over 50 eccentric orbits: leapfrog against adaptive RK45.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/viz_energy_error.lms` |
+
+| ![orbit_csv](docs/images/binary_orbit.png) |  |
+| --- | --- |
+| Equal-mass binary, one period, closed form checked.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/orbit_csv.lms` |  |
+
+Every picture is made by the script named under it: it runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot), [lmdraw](https://github.com/lmctl-ai/lmdraw) or [lmblender](https://github.com/lmctl-ai/lmblender) and writes `images/` into the current directory. All 28 run on the released lmspace v0.1.1. Two fetch data over HTTP (a Natural Earth map, two NAIF kernels); the GIFs need ffmpeg. `examples/render-all.sh` regenerates `docs/images/`.
 
 **Quick start:** `npm i -g @lmctl-ai/lmctl`, then paste any `lmctl autorun` line above into a terminal; it downloads lmspace and the drawing host and writes the picture to `images/`.
 

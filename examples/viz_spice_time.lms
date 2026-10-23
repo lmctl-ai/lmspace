@@ -1,0 +1,101 @@
+# Leap seconds and the sidereal day, measured with SPICE. The script downloads two small generic kernels from NASA
+# NAIF (naif0012.tls, the leap-second table, and pck00011.tpc, planetary orientation) and loads them with
+# space.load_kernel. lmspace's CSPICE then converts UTC dates to ephemeris time (ET), and turns the J2000 frame into
+# the rotating IAU_EARTH frame. Asserts: ET - UTC was 42.184 s in 1972 and is 69.184 s since 2017 (32.184 s plus 37
+# leap seconds); the Earth turns once in 86164.09 s (a sidereal day, 3 min 56 s short of a solar day), so its prime
+# meridian is 0.9856 deg further round at each midnight; and the ecliptic is tilted 23.439 deg to the equator.
+# Output: images/spice_time.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("build/kernels");
+mkdir("images");
+write_file("build/kernels/naif0012.tls", http_get("https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"));
+write_file("build/kernels/pck00011.tpc", http_get("https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc"));
+
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+space.load_kernel("build/kernels/naif0012.tls");
+space.load_kernel("build/kernels/pck00011.tpc");
+# ET - UTC on 1 January of every year: ET counts every SI second, the civil (day-count) clock does not.
+# (ET is TDB, which differs from TT by under 2 ms, hence the 0.002 s tolerance.)
+let et2000 = space.time("2000-01-01T12:00:00");
+assert_close(et2000, 64.184, 0.001);
+for (y in range(1972, 2027)) {
+  let et = space.time(str(y) + "-01-01T00:00:00");
+  # days from 2000-01-01 to y-01-01 by the Gregorian calendar
+  let n = y - 2000;
+  let days = 365 * n + int(floor(float(n + 3) / 4.0)) - int(floor(float(n + 99) / 100.0)) + int(floor(float(n + 399) / 400.0));
+  let diff = et - (float(days) * 86400.0 - 43200.0);
+  print("leap " + str(y) + " " + str(diff));
+  if (y == 1972) { assert_close(diff, 42.184, 0.002); }
+  if (y == 2026) { assert_close(diff, 69.184, 0.002); }
+}
+# prime meridian of the Earth (IAU_EARTH x axis) at 0h UTC on every day of 2026, as an angle in the J2000 equator
+let t0 = space.time("2026-01-01T00:00:00");
+for (d in range(0, 366)) {
+  let m = space.frame("J2000", "IAU_EARTH", t0 + float(d) * 86400.0);
+  # row 0 of the rotation is the IAU_EARTH x axis in J2000 coordinates; atan2 by Newton on sin/cos
+  let cx = m.get(0, 0);
+  let cy = m.get(0, 1);
+  let a = 0.0;
+  if (abs(cy) > abs(cx)) { if (cy > 0.0) { a = 1.5707963267948966; } else { a = -1.5707963267948966; } } else { if (cx < 0.0) { a = 3.141592653589793; } }
+  for (it in range(0, 6)) { a = a + (cy * cos(a) - cx * sin(a)) / (cx * cos(a) + cy * sin(a)); }
+  if (a < 0.0) { a = a + 6.283185307179586; }
+  print("gst " + str(d) + " " + str(a * 57.29577951308232));
+}
+# rotation between two orientations: trace(R1 R2^T) = 1 + 2 cos(angle)
+let r1 = space.frame("J2000", "IAU_EARTH", t0);
+let r2 = space.frame("J2000", "IAU_EARTH", t0 + 86164.0905);
+let r3 = space.frame("J2000", "IAU_EARTH", t0 + 86400.0);
+let tr2 = 0.0;
+let tr3 = 0.0;
+for (i in range(0, 3)) {
+  for (j in range(0, 3)) {
+    tr2 = tr2 + r1.get(i, j) * r2.get(i, j);
+    tr3 = tr3 + r1.get(i, j) * r3.get(i, j);
+  }
+}
+# after one sidereal day the Earth faces the stars exactly as before; after a solar day it has turned 0.9856 deg more
+assert_close(0.5 * (tr2 - 1.0), 1.0, 0.0000000001);
+assert_close(0.5 * (tr3 - 1.0), cos(0.9856 * 0.017453292519943295), 0.0000002);
+# obliquity of the ecliptic: the angle between the two z axes
+let ecl = space.frame("J2000", "ECLIPJ2000", 0.0);
+assert_close(ecl.get(2, 2), cos(23.4392911 * 0.017453292519943295), 0.0000001);
+end _dsl_
+savedsl(sim, "build/viz_spice_time-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_spice_time-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+write_file("build/examples/leap.txt", regex_replace(regex_replace(r.stdout, "gst [^\n]*\n", "", "g"), "\\{\"ok\".*", ""));
+write_file("build/examples/gst.txt", regex_replace(regex_replace(r.stdout, "leap [^\n]*\n", "", "g"), "\\{\"ok\".*", ""));
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/spice_time.png", 1200, 560);
+plot.cmd("set multiplot layout 1,2 title 'SPICE time and Earth orientation (lmspace + NAIF kernels naif0012.tls, pck00011.tpc)' font ',14'");
+plot.cmd("set grid");
+plot.cmd("set key bottom right box opaque");
+plot.cmd("set title 'ET - UTC on 1 January: 27 leap seconds since 1972'");
+plot.cmd("set xlabel 'year'");
+plot.cmd("set ylabel 'seconds'");
+plot.cmd("set xrange [1970:2027]");
+plot.cmd("set yrange [40:72]");
+plot.cmd("set label 1 'now: 32.184 s (TT - TAI) + 37 leap seconds' at 1972,68.5 left front");
+plot.cmd("plot 'build/examples/leap.txt' using 2:3 with steps lw 3 lc rgb '#1f77b4' title 'ET - UTC (space.time)', '' using 2:3 with points pt 7 ps 0.8 lc rgb '#1f77b4' notitle");
+plot.cmd("unset label 1");
+plot.cmd("set title 'Prime meridian at 0h UTC, 2026: +0.9856 deg a day'");
+plot.cmd("set xlabel 'day of 2026'");
+plot.cmd("set ylabel 'IAU Earth x axis from the J2000 x axis [deg]'");
+plot.cmd("set xrange [0:365]");
+plot.cmd("set yrange [0:360]");
+plot.cmd("set ytics 60");
+plot.cmd("unset key");
+plot.cmd("set label 2 'turns once per sidereal day, 86164.09 s' at 10,340 left front");
+plot.cmd("set label 3 'wraps at the September equinox' at 60,40 left front");
+plot.cmd("set arrow 1 from 215,36 to 258,4 lw 1.5 lc rgb 'black' front");
+plot.cmd("plot 'build/examples/gst.txt' using 2:3 with points pt 7 ps 0.5 lc rgb '#d62728' title 'space.frame(J2000, IAU_EARTH)' noenhanced");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_spice_time-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_spice_time-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/spice_time.png");

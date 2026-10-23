@@ -1,0 +1,132 @@
+# How long does a satellite sit in Earth's shadow? It depends on the beta angle, the angle between the Sun direction
+# and the orbit plane. lmspace propagates circular orbits (State.propagate, exact Kepler) through one period at
+# 720 points for every beta from 0 to 90 deg and counts the points inside the cylindrical shadow behind the Earth.
+# The script compares the count with the closed form f = acos(sqrt(h^2 + 2 R h) / ((R + h) cos beta)) / pi and asserts
+# the textbook numbers: the ISS (400 km) is dark for 36 of its 92.6 minutes at beta = 0 and never above 70.2 deg;
+# a geostationary satellite has eclipses only within 8.7 deg of the equinoxes, of up to 69 minutes. lmdraw draws the
+# geometry and the curves.
+# Output: images/eclipse.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let re = 6378.137;
+let deg = 0.017453292519943295;
+let worst = 0.0;
+for (b in range(0, 91)) {
+  let beta = float(b) * deg;
+  let line = str(b);
+  for (o in range(0, 3)) {
+    let r = re + 400.0;
+    if (o == 1) { r = re + 800.0; }
+    if (o == 2) { r = 42164.0; }
+    let T = period(r, mu);
+    # orbit in the x-y plane; the Sun direction is tilted out of it by beta
+    let sx = cos(beta);
+    let sz = sin(beta);
+    let st = elements(r, 0.0, 0.0, 0.0, 0.0, 0.0).to_state(mu);
+    let dark = 0;
+    for (k in range(0, 720)) {
+      let p = st.propagate(mu, T * float(k) / 720.0).position();
+      let along = p.x() * sx + p.z() * sz;
+      let px = p.x() - along * sx;
+      let py = p.y();
+      let pz = p.z() - along * sz;
+      if (along < 0.0 && px * px + py * py + pz * pz < re * re) { dark = dark + 1; }
+    }
+    let f = float(dark) / 720.0;
+    # closed form; acos by bisection (the host has cos but no acos)
+    let x = sqrt(r * r - re * re) / (r * cos(beta));
+    let g = 0.0;
+    if (x < 1.0) {
+      let lo = 0.0;
+      let hi = 1.5707963267948966;
+      for (it in range(0, 60)) {
+        let mid = 0.5 * (lo + hi);
+        if (cos(mid) > x) { lo = mid; } else { hi = mid; }
+      }
+      g = lo / 3.141592653589793;
+    }
+    worst = max(worst, abs(f - g));
+    line = line + " " + str(f * T / 60.0) + " " + str(g * T / 60.0);
+    if (o == 0 && b == 0) { assert_close(g * T / 60.0, 36.0, 0.3); assert_close(T / 60.0, 92.56, 0.05); }
+    if (o == 0 && b == 70) { assert_close(min(g, 1.0), g, 0.0); }
+    if (o == 0 && b == 71) { assert_close(g, 0.0, 0.0); }
+    if (o == 2 && b == 0) { assert_close(g * T / 60.0, 69.4, 0.5); }
+    if (o == 2 && b == 9) { assert_close(g, 0.0, 0.0); }
+  }
+  print(line);
+}
+assert_close(worst, 0.0, 0.003);
+end _dsl_
+savedsl(sim, "build/viz_eclipse-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_eclipse-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+
+# chart frame (right half): beta 0..90 deg on x, minutes 0..90 on y
+AX = 560.0;
+AY = 110.0;
+AW = 400.0;
+AH = 330.0;
+rows = csv_parse("b n0 a0 n1 a1 n2 a2\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, " ");
+curves = [];
+dots = [];
+for (c in range(0, 3)) {
+  t = "";
+  d = "";
+  for (k in range(0, rows.len())) {
+    m = rows.get(k, null);
+    b = m.get("b", 0);
+    px = AX + AW * b / 90.0;
+    t = t + sprintf(" %.1f,%.1f", px, AY + AH - AH * m.get("a" + c, 0.0) / 90.0);
+    if (b % 3 == 0) { d = d + sprintf(" M %.1f,%.1f m -2.2,0 a 2.2,2.2 0 1,0 4.4,0 a 2.2,2.2 0 1,0 -4.4,0", px, AY + AH - AH * m.get("n" + c, 0.0) / 90.0); }
+  }
+  push(curves, trim(t));
+  push(dots, trim(d));
+}
+c0 = curves.get(0, "");
+c1 = curves.get(1, "");
+c2 = curves.get(2, "");
+d0 = dots.get(0, "");
+d1 = dots.get(1, "");
+d2 = dots.get(2, "");
+
+d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+scene.canvas(1000, 520, "#ffffff");
+scene.text(30.0, 34.0, 21.0, "Eclipse season: minutes per orbit in Earth's shadow", "#1b2733").set_attr("font-weight", "700");
+scene.text(30.0, 58.0, 13.0, "Dots: lmspace orbit propagation, 720 points per orbit. Lines: closed form. Cylindrical shadow, no penumbra.", "#4a5a6a");
+# geometry, seen from above the orbit plane at beta = 0
+scene.rect(30.0, 80.0, 470.0, 400.0, "#f4f7fb");
+scene.text(48.0, 104.0, 13.0, "Sunlight", "#b8860b");
+scene.arrow(45.0, 150.0, 135.0, 150.0, "#e0a800", 2.0);
+scene.arrow(45.0, 280.0, 135.0, 280.0, "#e0a800", 2.0);
+scene.arrow(45.0, 410.0, 135.0, 410.0, "#e0a800", 2.0);
+scene.rect(250.0, 210.0, 240.0, 140.0, "#cfd6de");
+scene.text(470.0, 230.0, 12.0, "shadow", "#4a5a6a").set_attr("text-anchor", "end");
+scene.circle(250.0, 280.0, 148.0, "none").set_attr("stroke", "#1f77b4").set_attr("stroke-width", "2");
+scene.path("M 380.4,210.0 A 148 148 0 0 1 380.4,350.0", "none", "#d62728", 6.0);
+scene.circle(250.0, 280.0, 70.0, "#3b7dd8");
+scene.text(250.0, 285.0, 14.0, "Earth", "#ffffff").set_attr("text-anchor", "middle");
+scene.line(250.0, 280.0, 380.4, 210.0, "#4a5a6a", 1.0).set_attr("stroke-dasharray", "4 3");
+scene.text(404.0, 200.0, 12.0, "eclipse arc", "#d62728");
+scene.text(258.0, 125.0, 12.0, "orbit, radius R + h", "#1f77b4");
+scene.text(48.0, 438.0, 12.0, "Half the dark arc is acos(sqrt(h^2 + 2Rh) / (R + h)): the orbit leaves the shadow where it clears the Earth's limb. Tilting the Sun by beta shrinks the arc until it vanishes.", "#4a5a6a", 440.0);
+# chart
+scene.axes(560.0, 110.0, 400.0, 330.0, 0.0, 90.0, 0.0, 90.0, 6, "#4a5a6a");
+scene.text(760.0, 478.0, 13.0, "beta angle [deg]", "#1b2733").set_attr("text-anchor", "middle");
+scene.text(520.0, 100.0, 13.0, "minutes in shadow per orbit", "#1b2733");
+scene.polyline(${c0}, "#1f77b4", 2.5);
+scene.polyline(${c1}, "#ff7f0e", 2.5);
+scene.polyline(${c2}, "#2ca02c", 2.5);
+scene.path(${d0}, "#1f77b4", "none", 0.1);
+scene.path(${d1}, "#ff7f0e", "none", 0.1);
+scene.path(${d2}, "#2ca02c", "none", 0.1);
+scene.legend(760.0, 122.0, "ISS, 400 km (92.6 min orbit)\n800 km (100.9 min orbit)\nGEO, 35786 km (23.9 h orbit)", "#1f77b4,#ff7f0e,#2ca02c", "#1b2733", "#ffffff");
+scene.render_png("images/eclipse.png", 1000, 520, 1);
+end _dsl_
+savedsl(d, "build/viz_eclipse-draw.dslb");
+r = system ${dsl_cli(d)} --dsl build/viz_eclipse-draw.dslb;
+if (r.code != 0) { println(r.stderr); }
+assert(r.code == 0);
+println("wrote images/eclipse.png");

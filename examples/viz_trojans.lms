@@ -37,7 +37,7 @@ plot.cmd("set title 'Trojan asteroids in the frame rotating with Jupiter (lmspac
 plot.cmd("set xlabel \"x' [Jupiter distance]\"");
 plot.cmd("set ylabel \"y' [Jupiter distance]\"");
 plot.cmd("set size ratio -1");
-plot.cmd("set xrange [-0.35:1.35]");
+plot.cmd("set xrange [-0.7:1.35]");
 plot.cmd("set yrange [-1.2:1.2]");
 plot.cmd("set grid");
 plot.cmd("set key outside bottom center horizontal");
@@ -45,15 +45,17 @@ plot.cmd("set object 1 circle at 0,0 size 0.05 fc rgb '#ffcc00' fillstyle solid 
 plot.cmd("set object 2 circle at 1,0 size 0.03 fc rgb '#d2691e' fillstyle solid border rgb 'black'");
 plot.cmd("set label 1 'Sun' at 0.0,-0.1 center");
 plot.cmd("set label 2 'Jupiter' at 1.0,-0.09 center");
-plot.cmd("set label 3 'L4' at 0.52,0.9 left");
-plot.cmd("set label 4 'L5' at 0.52,-0.9 left");
+plot.cmd("set label 3 'L4' at 0.5,0.72 center");
+plot.cmd("set label 4 'L5' at 0.5,-0.72 center");
+plot.cmd("set object 3 circle at 0.5,0.8660254 size 0.012 fc rgb 'black' fillstyle solid");
+plot.cmd("set object 4 circle at 0.5,-0.8660254 size 0.012 fc rgb 'black' fillstyle solid");
 plot.cmd("set arrow 1 from 0,0 to 0.5,0.8660254 nohead dt 3 lc rgb 'gray50'");
 plot.cmd("set arrow 2 from 1,0 to 0.5,0.8660254 nohead dt 3 lc rgb 'gray50'");
 plot.cmd("set arrow 3 from 0,0 to 0.5,-0.8660254 nohead dt 3 lc rgb 'gray50'");
 plot.cmd("set arrow 4 from 1,0 to 0.5,-0.8660254 nohead dt 3 lc rgb 'gray50'");
 plot.cmd("rx(x,y,t) = x*cos(t) + y*sin(t)");
 plot.cmd("ry(x,y,t) = -x*sin(t) + y*cos(t)");
-plot.cmd("plot 'build/examples/trojans.csv' skip 1 using (rx($14,$15,$1)):(ry($14,$15,$1)) with lines lw 1 lc rgb '#1f77b4' title 'start 7 deg ahead of L4', '' skip 1 using (rx($20,$21,$1)):(ry($20,$21,$1)) with lines lw 1 lc rgb '#d62728' title 'starts 26 deg behind L4', '' skip 1 using (rx($26,$27,$1)):(ry($26,$27,$1)) with lines lw 1 lc rgb '#2ca02c' title 'starts 31 deg from Jupiter'");
+plot.cmd("plot 'build/examples/trojans.csv' skip 1 using (rx($14,$15,$1)):(ry($14,$15,$1)) with lines lw 1.5 lc rgb '#1f77b4' title 'start 7 deg ahead of L4', '' skip 1 using (rx($20,$21,$1)):(ry($20,$21,$1)) with lines lw 1.5 lc rgb '#d62728' title 'starts 26 deg behind L4', '' skip 1 using (rx($26,$27,$1)):(ry($26,$27,$1)) with lines lw 1.5 lc rgb '#2ca02c' title 'starts 31 deg from Jupiter'");
 plot.close();
 end _dsl_
 savedsl(draw, "build/viz_trojans-draw.dslb");

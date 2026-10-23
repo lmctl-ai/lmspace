@@ -1,0 +1,173 @@
+# Ground tracks of four classic orbits over one sidereal day: the ISS (51.6 deg), a 700 km sun-synchronous orbit
+# (98.2 deg), a Molniya orbit (63.4 deg, e = 0.74, apogee over the northern hemisphere) and a GPS satellite (55 deg,
+# half a sidereal day). lmspace propagates each satellite with the exact Kepler solution (State.propagate), the
+# script rotates the position into the Earth-fixed frame and turns it into longitude and latitude. It asserts the
+# textbook facts: the highest latitude equals the inclination (51.6 and 63.4 deg), the GPS track closes on itself after
+# one sidereal day, and the Molniya satellite spends most of the day north of the equator. lmdraw draws the tracks over
+# a Natural Earth map (public domain, fetched from its pinned GitHub release).
+# Output: images/ground_tracks.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mu = 398600.4418;
+let we = 0.00007292115855;
+let deg = 0.017453292519943295;
+let sidereal = 86164.0905;
+let iss_max = 0.0;
+let mol_max = 0.0;
+let mol_north = 0.0;
+let mol_prev_t = 0.0;
+let gps_first = 0.0;
+let gps_last = 0.0;
+for (s in range(0, 4)) {
+  # elements(a [km], e, i, raan, argp, nu) and how long to follow each satellite
+  let el = elements(6778.0, 0.0005, 51.6 * deg, 0.0, 0.0, 0.0);
+  let dur = 2.0 * period(6778.0, mu);
+  let dt = 30.0;
+  if (s == 1) { el = elements(7078.0, 0.001, 98.19 * deg, 1.2, 0.0, 0.0); dur = 2.0 * period(7078.0, mu); }
+  if (s == 2) { el = elements(26600.0, 0.74, 63.4 * deg, 1.0, 270.0 * deg, 0.0); dur = sidereal; dt = 80.0; }
+  if (s == 3) { el = elements(26561.75, 0.0, 55.0 * deg, 2.5, 0.0, 0.0); dur = sidereal; dt = 120.0; }
+  let st = el.to_state(mu);
+  let n = int(dur / dt);
+  for (k in range(0, n + 1)) {
+    let t = dur * float(k) / float(n);
+    # Molniya: step evenly in eccentric anomaly, so the fast perigee pass gets as many points as the slow apogee
+    if (s == 2) {
+      let ea = 4.0 * 3.141592653589793 * float(k) / float(n);
+      t = min((ea - 0.74 * sin(ea)) * period(26600.0, mu) / 6.283185307179586, dur);
+    }
+    let p = st.propagate(mu, t).position();
+    # rotate the inertial position into the Earth-fixed frame (Greenwich on the x axis at t = 0)
+    let th = we * t;
+    let xe = p.x() * cos(th) + p.y() * sin(th);
+    let ye = 0.0 - p.x() * sin(th) + p.y() * cos(th);
+    let rho = sqrt(xe * xe + ye * ye);
+    # atan2 by Newton's method on sin/cos (the host has no atan2): start within 45 deg, converge in 5 steps
+    let lon = 0.0;
+    if (abs(ye) > abs(xe)) { if (ye > 0.0) { lon = 1.5707963267948966; } else { lon = -1.5707963267948966; } } else { if (xe < 0.0) { lon = 3.141592653589793; } }
+    let lat = 0.0;
+    if (abs(p.z()) > rho) { if (p.z() > 0.0) { lat = 1.5707963267948966; } else { lat = -1.5707963267948966; } }
+    for (it in range(0, 6)) {
+      lon = lon + (ye * cos(lon) - xe * sin(lon)) / (xe * cos(lon) + ye * sin(lon));
+      lat = lat + (p.z() * cos(lat) - rho * sin(lat)) / (rho * cos(lat) + p.z() * sin(lat));
+    }
+    if (lon > 3.141592653589793) { lon = lon - 6.283185307179586; }
+    if (s == 0) { iss_max = max(iss_max, lat / deg); }
+    if (s == 2) {
+      mol_max = max(mol_max, lat / deg);
+      # time spent north of the equator (samples are uneven in time here, so weight by the step)
+      if (lat > 0.0) { mol_north = mol_north + (t - mol_prev_t); }
+      mol_prev_t = t;
+    }
+    if (s == 3 && k == 0) { gps_first = lon / deg; }
+    if (s == 3) { gps_last = lon / deg; }
+    print(str(s) + " " + str(lon / deg) + " " + str(lat / deg));
+  }
+}
+assert_close(iss_max, 51.6, 0.2);
+assert_close(mol_max, 63.4, 0.2);
+assert_close(gps_last, gps_first, 0.1);
+assert_close(mol_north / sidereal, 0.88, 0.06);
+end _dsl_
+savedsl(sim, "build/viz_ground_tracks-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_ground_tracks-sim.dslb;
+if (r.code != 0) { println(r.stdout); println(r.stderr); }
+assert(r.code == 0);
+
+# Map geometry: equirectangular projection into a 920 x 460 px frame.
+X0 = 40.0;
+Y0 = 64.0;
+W = 920.0;
+H = 460.0;
+# The host prints "sat lon lat" rows, then its {"ok": ...} status line, which is dropped here.
+rows = csv_parse("sat lon lat\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, " ");
+# One SVG path per satellite; a jump of more than 180 deg in longitude starts a new segment (the date line).
+tracks = [];
+for (s in range(0, 4)) {
+  t = "";
+  pv = 999.0;
+  for (k in range(0, rows.len())) {
+    m = rows.get(k, null);
+    if (m.get("sat", 0) == s) {
+      lon = m.get("lon", 0.0);
+      lat = m.get("lat", 0.0);
+      op = " ";
+      if (abs(lon - pv) > 180.0) { op = " M "; }
+      pv = lon;
+      t = t + op + sprintf("%.1f,%.1f", X0 + (lon + 180.0) / 360.0 * W, Y0 + (90.0 - lat) / 180.0 * H);
+    }
+  }
+  push(tracks, trim(t));
+}
+iss = tracks.get(0, "");
+sso = tracks.get(1, "");
+mol = tracks.get(2, "");
+gps = tracks.get(3, "");
+
+land = json_parse(http_get("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_110m_land.geojson"));
+feats = land.get("features", []);
+# lmdraw path data is limited to 16 KB per node, so the land polygons (implicit line-to after M) are packed
+# into up to 8 paths.
+chunks = [];
+landpath = "";
+for (f in range(0, feats.len())) {
+  ring = feats.get(f, null).get("geometry", null).get("coordinates", []).get(0, []);
+  poly = "";
+  for (k in range(0, ring.len())) {
+    pt = ring.get(k, []);
+    op = " ";
+    if (k == 0) { op = " M "; }
+    poly = poly + op + sprintf("%.1f,%.1f", X0 + (pt.get(0, 0.0) + 180.0) / 360.0 * W, Y0 + (90.0 - pt.get(1, 0.0)) / 180.0 * H);
+  }
+  if (len(landpath) + len(poly) > 16000) { push(chunks, trim(landpath)); landpath = ""; }
+  landpath = landpath + poly + " Z";
+}
+push(chunks, trim(landpath));
+assert(len(chunks) <= 8);
+while (len(chunks) < 8) { push(chunks, "M 0,0"); }
+land0 = chunks.get(0, "");
+land1 = chunks.get(1, "");
+land2 = chunks.get(2, "");
+land3 = chunks.get(3, "");
+land4 = chunks.get(4, "");
+land5 = chunks.get(5, "");
+land6 = chunks.get(6, "");
+land7 = chunks.get(7, "");
+grid = "";
+for (g in range(0, 13)) { gx = X0 + W * g / 12.0; grid = grid + sprintf(" M %.1f,%.1f L %.1f,%.1f", gx, Y0, gx, Y0 + H); }
+for (g in range(0, 7)) { gy = Y0 + H * g / 6.0; grid = grid + sprintf(" M %.1f,%.1f L %.1f,%.1f", X0, gy, X0 + W, gy); }
+
+d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+scene.canvas(1000, 600, "#ffffff");
+scene.text(40.0, 30.0, 20.0, "Ground tracks over one sidereal day (lmspace Kepler propagation, lmdraw map)", "#1b2733").set_attr("font-weight", "700");
+scene.text(40.0, 52.0, 13.0, "ISS and sun-synchronous: two orbits each. Molniya and GPS: one full day; the GPS track closes on itself.", "#4a5a6a");
+scene.rect(40.0, 64.0, 920.0, 460.0, "#dcebf7");
+scene.path(${land0}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land1}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land2}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land3}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land4}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land5}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land6}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${land7}, "#c9d8b6", "#8aa17a", 0.6);
+scene.path(${grid}, "none", "#9fb3c8", 0.5).set_attr("stroke-dasharray", "3 3");
+scene.path(${iss}, "none", "#1f77b4", 2.0);
+scene.path(${sso}, "none", "#ff7f0e", 2.0);
+scene.path(${mol}, "none", "#d62728", 2.4);
+scene.path(${gps}, "none", "#2ca02c", 2.4);
+scene.text(30.0, 298.0, 11.0, "0", "#4a5a6a").set_attr("text-anchor", "end");
+scene.text(30.0, 145.0, 11.0, "60N", "#4a5a6a").set_attr("text-anchor", "end");
+scene.text(30.0, 452.0, 11.0, "60S", "#4a5a6a").set_attr("text-anchor", "end");
+scene.text(193.3, 540.0, 11.0, "120W", "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(500.0, 540.0, 11.0, "0", "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(806.7, 540.0, 11.0, "120E", "#4a5a6a").set_attr("text-anchor", "middle");
+scene.legend(40.0, 552.0, "ISS, 51.6 deg, 400 km\nsun-synchronous, 98.2 deg, 700 km", "#1f77b4,#ff7f0e", "#1b2733", "none");
+scene.legend(420.0, 552.0, "Molniya, 63.4 deg, e = 0.74 (12 h)\nGPS, 55 deg, 20200 km (12 h)", "#d62728,#2ca02c", "#1b2733", "none");
+scene.text(960.0, 590.0, 10.0, "Land: Natural Earth 1:110m (public domain)", "#7a8a9a").set_attr("text-anchor", "end");
+scene.render_png("images/ground_tracks.png", 1000, 600, 1);
+end _dsl_
+savedsl(d, "build/viz_ground_tracks-draw.dslb");
+r = system ${dsl_cli(d)} --dsl build/viz_ground_tracks-draw.dslb;
+if (r.code != 0) { println(r.stderr); }
+assert(r.code == 0);
+println("wrote images/ground_tracks.png");

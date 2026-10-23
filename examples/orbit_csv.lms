@@ -6,10 +6,10 @@ let a = space.body("primary", 1.0, -0.5, 0.0, 0.0, 0.0, -0.7071067811865475, 0.0
 let b = space.body("secondary", 1.0, 0.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.0);
 let binary = space.system().add(a).add(b);
 let t = 4.442882938158366;
-let out = binary.propagate(t, 101, 0.01, "rk45", 0.0000000001);
-assert_close(out.get(100, 0), t, 0.00000001);
-assert_close(out.get(100, 1), -0.5, 0.0000001);
-assert_close(out.get(100, 2), 0.0, 0.0000001);
+let out = binary.propagate(t, 361, 0.01, "rk45", 0.0000000001);
+assert_close(out.get(360, 0), t, 0.00000001);
+assert_close(out.get(360, 1), -0.5, 0.0000001);
+assert_close(out.get(360, 2), 0.0, 0.0000001);
 assert_close(float(out.cols()), 13.0, 0.0);
 out.save_csv("build/examples/orbit.csv");
 end _dsl_

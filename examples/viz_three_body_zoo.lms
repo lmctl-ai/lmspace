@@ -1,0 +1,78 @@
+# Six periodic orbits of three equal masses, from the zoo found by Suvakov and Dmitrasinovic (Phys. Rev. Lett. 110,
+# 114301, 2013). Every orbit starts from the same shape (bodies at x = -1, 1 and 0, G = m = 1) with velocities
+# (p1, p2), (p1, p2) and (-2 p1, -2 p2); only p1, p2 and the period T change. lmspace integrates each one for one
+# period with its N-body RK45 at tolerance 1e-13 and asserts that all three bodies come back to where they
+# started (within 0.005: the published p1, p2 have six digits) and that energy and angular momentum (zero) are
+# conserved. lmplot draws the six paths, one colour per body.
+# Output: images/three_body_zoo.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+for (c in range(0, 6)) {
+  # butterfly I, butterfly II, moth I, yin-yang Ia, dragonfly, goggles
+  let p1 = 0.306893;
+  let p2 = 0.125507;
+  let T = 6.235641;
+  if (c == 1) { p1 = 0.392955; p2 = 0.097579; T = 7.003707; }
+  if (c == 2) { p1 = 0.464445; p2 = 0.396060; T = 14.893911; }
+  if (c == 3) { p1 = 0.513938; p2 = 0.304736; T = 17.328370; }
+  if (c == 4) { p1 = 0.080584; p2 = 0.588836; T = 21.270975; }
+  if (c == 5) { p1 = 0.083300; p2 = 0.127889; T = 10.466818; }
+  let a = space.body("a", 1.0, -1.0, 0.0, 0.0, p1, p2, 0.0);
+  let b = space.body("b", 1.0, 1.0, 0.0, 0.0, p1, p2, 0.0);
+  let m = space.body("c", 1.0, 0.0, 0.0, 0.0, -2.0 * p1, -2.0 * p2, 0.0);
+  let sys = space.system().add(a).add(b).add(m);
+  let out = sys.propagate(T, 4001, 0.0001, "rk45", 0.0000000000001);
+  let err = 0.0;
+  for (j in range(0, 3)) {
+    err = max(err, abs(out.get(4000, 1 + 6 * j) - out.get(0, 1 + 6 * j)));
+    err = max(err, abs(out.get(4000, 2 + 6 * j) - out.get(0, 2 + 6 * j)));
+  }
+  print("orbit " + str(c) + ": return error " + str(err));
+  assert_close(err, 0.0, 0.005);
+  # energy at the end, from the final row, against the initial energy
+  let a2 = space.body("a", 1.0, out.get(4000, 1), out.get(4000, 2), 0.0, out.get(4000, 4), out.get(4000, 5), 0.0);
+  let b2 = space.body("b", 1.0, out.get(4000, 7), out.get(4000, 8), 0.0, out.get(4000, 10), out.get(4000, 11), 0.0);
+  let m2 = space.body("c", 1.0, out.get(4000, 13), out.get(4000, 14), 0.0, out.get(4000, 16), out.get(4000, 17), 0.0);
+  let end_sys = space.system().add(a2).add(b2).add(m2);
+  assert_close(end_sys.energy(), sys.energy(), 0.0000001);
+  assert_close(sys.angular_momentum().z(), 0.0, 0.000000000001);
+  out.save_csv("build/examples/zoo_" + str(c) + ".csv");
+}
+end _dsl_
+savedsl(sim, "build/viz_three_body_zoo-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_three_body_zoo-sim.dslb;
+println(r.stdout);
+assert(r.code == 0);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/three_body_zoo.png", 1200, 760);
+plot.cmd("set datafile separator ','");
+plot.cmd("set multiplot layout 2,3 title 'Periodic three-body orbits (Suvakov and Dmitrasinovic 2013), integrated for one period by lmspace' font ',14'");
+plot.cmd("set size ratio -1");
+plot.cmd("unset key");
+plot.cmd("set tics font ',9'");
+plot.cmd("set grid");
+plot.cmd("set xrange [-1.35:1.35]");
+plot.cmd("set yrange [-1.2:1.2]");
+plot.cmd("col(j) = word('#1f77b4 #d62728 #2ca02c', j+1)");
+plot.cmd("set title 'butterfly I, T = 6.24'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_0.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("set title 'butterfly II, T = 7.00'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_1.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("set title 'moth I, T = 14.89'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_2.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("set title 'yin-yang Ia, T = 17.33'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_3.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("set title 'dragonfly, T = 21.27'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_4.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("set title 'goggles, T = 10.47'");
+plot.cmd("plot for [j=0:2] 'build/examples/zoo_5.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_three_body_zoo-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_three_body_zoo-draw.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+println("wrote images/three_body_zoo.png");

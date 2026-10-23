@@ -1,0 +1,148 @@
+# A delta-v map of the Earth-Moon-Mars neighbourhood, the "subway map" mission planners sketch first. Every number
+# on an edge is computed by lmspace: hohmann() for the LEO -> GTO -> GEO burns, the trans-lunar injection and the
+# interplanetary departure speeds; vis-viva and patched conics for capture and landing; a combined plane change for
+# a launch from Cape Canaveral (28.5 deg). The asserts pin the textbook values (2.45 + 1.84 km/s to GEO, 3.13 km/s
+# TLI, 0.82 km/s lunar orbit insertion, 1.73 km/s to the lunar surface, 3.22 km/s to escape, 3.6 km/s towards Mars,
+# 2.1 km/s Mars capture). Reaching low Earth orbit itself costs about 9.4 km/s including gravity and drag losses;
+# that edge is a typical figure, not a computation. lmdraw draws the map.
+# Output: images/delta_v_map.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let mue = 398600.4418;
+let mum = 4902.800066;
+let mus = 132712440018.0;
+let mumars = 42828.37;
+let au = 149597870.7;
+let leo = 6378.137 + 200.0;
+let vleo = sqrt(mue / leo);
+# GEO via GTO, plane change of 28.5 deg combined with the apogee burn
+let g = hohmann(leo, 42164.0, mue);
+let va = sqrt(mue / 42164.0) - g.get(0, 1);
+let vgeo = sqrt(mue / 42164.0);
+let inc = 28.5 * 0.017453292519943295;
+let gto_geo = sqrt(va * va + vgeo * vgeo - 2.0 * va * vgeo * cos(inc));
+# Moon: TLI, then the arrival speed relative to the Moon (patched conic) and capture into a 100 km orbit
+let lun = hohmann(leo, 384400.0, mue);
+let vapo = sqrt(mue / 384400.0) - lun.get(0, 1);
+let vinf_moon = sqrt(mue / 384400.0) - vapo;
+let rllo = 1737.4 + 100.0;
+let loi = sqrt(vinf_moon * vinf_moon + 2.0 * mum / rllo) - sqrt(mum / rllo);
+# landing: Hohmann from the 100 km orbit down to the surface, then cancel the touchdown speed
+let land = hohmann(rllo, 1737.4, mum);
+let landing2 = abs(land.get(0, 0)) + sqrt(mum * (2.0 / 1737.4 - 2.0 / (rllo + 1737.4)));
+# escape and Mars: hyperbolic excess from the heliocentric Hohmann transfer
+let esc = sqrt(2.0 * mue / leo) - vleo;
+let mars = hohmann(au, 1.523679 * au, mus);
+let vinf_dep = mars.get(0, 0);
+let tmi = sqrt(vinf_dep * vinf_dep + 2.0 * mue / leo) - vleo;
+let vinf_arr = mars.get(0, 1);
+let rlmo = 3389.5 + 300.0;
+let moi = sqrt(vinf_arr * vinf_arr + 2.0 * mumars / rlmo) - sqrt(mumars / rlmo);
+let venus = hohmann(au, 0.723332 * au, mus);
+let tvi = sqrt(venus.get(0, 0) * venus.get(0, 0) + 2.0 * mue / leo) - vleo;
+assert_close(g.get(0, 0), 2.457, 0.01);
+assert_close(gto_geo, 1.83, 0.02);
+assert_close(lun.get(0, 0), 3.13, 0.02);
+assert_close(loi, 0.82, 0.03);
+assert_close(landing2, 1.73, 0.02);
+assert_close(esc, 3.22, 0.01);
+assert_close(tmi, 3.6, 0.05);
+assert_close(moi, 2.09, 0.05);
+assert_close(abs(tvi), 3.5, 0.06);
+print("gto " + str(g.get(0, 0)));
+print("geo " + str(gto_geo));
+print("geo0 " + str(g.get(0, 1)));
+print("tli " + str(lun.get(0, 0)));
+print("loi " + str(loi));
+print("land " + str(landing2));
+print("esc " + str(esc));
+print("tmi " + str(tmi - esc));
+print("tmit " + str(tmi));
+print("moi " + str(moi));
+print("tvi " + str(abs(tvi) - esc));
+print("tvit " + str(abs(tvi)));
+print("days " + str(mars.get(0, 2) / 86400.0));
+end _dsl_
+savedsl(sim, "build/viz_delta_v_map-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_delta_v_map-sim.dslb;
+if (r.code != 0) { println(r.stdout); }
+assert(r.code == 0);
+rows = csv_parse("k v\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, " ");
+# rows come in the order printed above: gto geo geo0 tli loi land esc tmi tmit moi tvi tvit days
+val = [];
+for (k in range(0, rows.len())) { push(val, rows.get(k, null).get("v", 0.0)); }
+gto = sprintf("%.2f", val.get(0, 0.0));
+geo = sprintf("%.2f", val.get(1, 0.0));
+geo0 = sprintf("(%.2f from the equator)", val.get(2, 0.0));
+tli = sprintf("%.2f", val.get(3, 0.0));
+loi = sprintf("%.2f", val.get(4, 0.0));
+land = sprintf("%.2f", val.get(5, 0.0));
+esc = sprintf("%.2f", val.get(6, 0.0));
+tmi = sprintf("+%.2f (%.2f from LEO: Oberth effect)", val.get(7, 0.0), val.get(8, 0.0));
+moi = sprintf("%.2f", val.get(9, 0.0));
+tvi = sprintf("+%.2f (%.2f from LEO)", val.get(10, 0.0), val.get(11, 0.0));
+days = sprintf("Hohmann transfer, %.0f days", val.get(12, 0.0));
+
+d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+scene.canvas(1100, 600, "#ffffff");
+scene.text(30.0, 38.0, 22.0, "Delta-v map: what it costs to get there (km/s)", "#1b2733").set_attr("font-weight", "700");
+scene.text(30.0, 62.0, 13.0, "Edge numbers computed by lmspace (Hohmann, vis-viva, patched conics; impulsive burns, no margins).", "#4a5a6a");
+# lines: Earth -> LEO trunk, GEO branch up, Moon branch right, interplanetary branch down
+scene.line(90.0, 330.0, 300.0, 330.0, "#6b7b8c", 8.0);
+scene.line(300.0, 330.0, 300.0, 140.0, "#d62728", 8.0);
+scene.line(300.0, 140.0, 560.0, 140.0, "#d62728", 8.0);
+scene.line(300.0, 330.0, 560.0, 330.0, "#7f7f7f", 8.0);
+scene.line(560.0, 330.0, 800.0, 330.0, "#7f7f7f", 8.0);
+scene.line(800.0, 330.0, 1010.0, 330.0, "#7f7f7f", 8.0);
+scene.line(300.0, 330.0, 300.0, 500.0, "#ff7f0e", 8.0);
+scene.line(300.0, 500.0, 560.0, 500.0, "#ff7f0e", 8.0);
+scene.line(560.0, 500.0, 800.0, 500.0, "#ff7f0e", 8.0);
+scene.line(300.0, 500.0, 300.0, 560.0, "#9467bd", 8.0);
+# stations
+scene.circle(90.0, 330.0, 16.0, "#3b7dd8");
+scene.circle(300.0, 330.0, 13.0, "#ffffff").set_attr("stroke", "#1b2733").set_attr("stroke-width", "4");
+scene.circle(300.0, 140.0, 11.0, "#ffffff").set_attr("stroke", "#d62728").set_attr("stroke-width", "4");
+scene.circle(560.0, 140.0, 11.0, "#ffffff").set_attr("stroke", "#d62728").set_attr("stroke-width", "4");
+scene.circle(560.0, 330.0, 11.0, "#ffffff").set_attr("stroke", "#7f7f7f").set_attr("stroke-width", "4");
+scene.circle(800.0, 330.0, 11.0, "#ffffff").set_attr("stroke", "#7f7f7f").set_attr("stroke-width", "4");
+scene.circle(1010.0, 330.0, 16.0, "#bdbdbd");
+scene.circle(300.0, 500.0, 11.0, "#ffffff").set_attr("stroke", "#ff7f0e").set_attr("stroke-width", "4");
+scene.circle(560.0, 500.0, 11.0, "#ffffff").set_attr("stroke", "#ff7f0e").set_attr("stroke-width", "4");
+scene.circle(800.0, 500.0, 16.0, "#c1440e");
+scene.circle(300.0, 560.0, 9.0, "#9467bd");
+# station names
+scene.text(90.0, 370.0, 14.0, "Earth surface", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(318.0, 362.0, 14.0, "LEO 200 km", "#1b2733").set_attr("font-weight", "700");
+scene.text(300.0, 118.0, 14.0, "GTO", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(560.0, 118.0, 14.0, "GEO", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(560.0, 362.0, 14.0, "trans-lunar", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(800.0, 362.0, 14.0, "low lunar orbit", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(1010.0, 370.0, 14.0, "Moon surface", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(318.0, 492.0, 14.0, "escape (C3 = 0)", "#1b2733").set_attr("font-weight", "700");
+scene.text(560.0, 488.0, 14.0, "to Mars", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(800.0, 540.0, 14.0, "low Mars orbit", "#1b2733").set_attr("text-anchor", "middle").set_attr("font-weight", "700");
+scene.text(318.0, 566.0, 14.0, "to Venus", "#1b2733").set_attr("font-weight", "700");
+# edge costs
+scene.text(195.0, 316.0, 15.0, "9.4 (typical)", "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(312.0, 240.0, 15.0, ${gto}, "#d62728");
+scene.text(430.0, 126.0, 15.0, ${geo}, "#d62728").set_attr("text-anchor", "middle");
+scene.text(430.0, 168.0, 12.0, "incl. 28.5 deg plane change", "#d62728").set_attr("text-anchor", "middle");
+scene.text(430.0, 184.0, 12.0, ${geo0}, "#d62728").set_attr("text-anchor", "middle");
+scene.text(430.0, 316.0, 15.0, ${tli}, "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(680.0, 316.0, 15.0, ${loi}, "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(905.0, 316.0, 15.0, ${land}, "#4a5a6a").set_attr("text-anchor", "middle");
+scene.text(312.0, 425.0, 15.0, ${esc}, "#ff7f0e");
+scene.text(430.0, 524.0, 13.0, ${tmi}, "#ff7f0e").set_attr("text-anchor", "middle");
+scene.text(680.0, 486.0, 15.0, ${moi}, "#ff7f0e").set_attr("text-anchor", "middle");
+scene.text(680.0, 524.0, 13.0, ${days}, "#ff7f0e").set_attr("text-anchor", "middle");
+scene.text(318.0, 588.0, 13.0, ${tvi}, "#9467bd");
+scene.text(820.0, 160.0, 13.0, "Read it like a subway map: add the numbers along a route.", "#4a5a6a", 250.0);
+scene.text(820.0, 210.0, 13.0, "LEO to the Moon's surface: 3.13 + 0.82 + 1.73 = 5.7 km/s, more than LEO to GEO.", "#4a5a6a", 250.0);
+scene.render_png("images/delta_v_map.png", 1100, 600, 1);
+end _dsl_
+savedsl(d, "build/viz_delta_v_map-draw.dslb");
+r = system ${dsl_cli(d)} --dsl build/viz_delta_v_map-draw.dslb;
+if (r.code != 0) { println(r.stderr); }
+assert(r.code == 0);
+println("wrote images/delta_v_map.png");
