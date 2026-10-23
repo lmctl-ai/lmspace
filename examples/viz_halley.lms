@@ -1,0 +1,58 @@
+# Halley's comet: e = 0.967, perihelion 0.586 AU, so aphelion 35 AU and a period of 75 years. lmspace integrates one full
+# orbit (RK45 at 1e-10) in units where the Sun's GM is 1, AU and 1/(2 pi) years; the script asserts that the comet is back
+# at perihelion after 75.3 years and that its perihelion speed is the vis-viva value 54.5 km/s. Top: the orbit with the
+# orbit of the Earth; bottom: speed in km/s on a log scale, 54 km/s at perihelion and 0.9 km/s at aphelion.
+# Output: images/halley.png   (run: lmctl autorun <raw url of this file>)
+mkdir("build/examples");
+mkdir("images");
+sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+let sun = space.body("sun", 1.0);
+let rp = 0.586;
+let comet = space.body("halley", 0.000000000001, rp, 0.0, 0.0, 0.0, sqrt(1.96714 / rp), 0.0);
+let a = rp / (1.0 - 0.96714);
+let t = 2.0 * 3.141592653589793 * pow(a, 1.5);
+let out = space.system().add(sun).add(comet).propagate(t, 2001, 0.05, "rk45", 0.0000000001);
+assert_close(t / 6.283185307179586, 75.3, 0.2);
+assert_close(out.get(2000, 7), rp, 0.002);
+assert_close(out.get(2000, 8), 0.0, 0.01);
+assert_close(sqrt(out.get(0, 10) * out.get(0, 10) + out.get(0, 11) * out.get(0, 11)) * 29.78, 54.5, 0.1);
+out.save_csv("build/examples/halley.csv");
+end _dsl_
+savedsl(sim, "build/viz_halley-sim.dslb");
+r = system ${dsl_cli(sim)} --dsl build/viz_halley-sim.dslb;
+assert(r.code == 0);
+
+draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+plot.png("images/halley.png", 1000, 760);
+plot.cmd("set datafile separator ','");
+plot.cmd("set multiplot layout 2,1");
+plot.cmd("set title 'Orbit of Halley comet (e = 0.967), AU'");
+plot.cmd("set xlabel 'x [AU]'");
+plot.cmd("set ylabel 'y [AU]'");
+plot.cmd("set size ratio -1");
+plot.cmd("set xrange [-37:3]");
+plot.cmd("set yrange [-6.5:6.5]");
+plot.cmd("set grid");
+plot.cmd("set key top left box opaque");
+plot.cmd("set parametric");
+plot.cmd("set trange [0:2*pi]");
+plot.cmd("set object 1 circle at 0,0 size 0.8 fc rgb '#ffcc00' fillstyle solid border rgb 'black'");
+plot.cmd("plot 'build/examples/halley.csv' skip 1 using 8:9 with lines lw 2 lc rgb '#1f77b4' title 'Halley', cos(t), sin(t) with lines lw 2 lc rgb '#2ca02c' title 'Earth'");
+plot.cmd("unset parametric");
+plot.cmd("unset object 1");
+plot.cmd("set size noratio");
+plot.cmd("set title 'Speed along the orbit'");
+plot.cmd("set xlabel 'time [years]'");
+plot.cmd("set ylabel 'speed [km/s]  (log scale)'");
+plot.cmd("set logscale y");
+plot.cmd("set xrange [0:75.3]");
+plot.cmd("set autoscale y");
+plot.cmd("unset key");
+plot.cmd("plot 'build/examples/halley.csv' skip 1 using ($1/6.283185307179586):(29.78*sqrt($11**2+$12**2)) with lines lw 2 lc rgb '#d62728'");
+plot.cmd("unset multiplot");
+plot.close();
+end _dsl_
+savedsl(draw, "build/viz_halley-draw.dslb");
+r = system ${dsl_cli(draw)} --dsl build/viz_halley-draw.dslb;
+assert(r.code == 0);
+println("wrote images/halley.png");
