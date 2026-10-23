@@ -102,7 +102,7 @@ Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or instal
 | `system.propagate(duration, points, step, method, tol)` | matrix with time and six Cartesian columns per body |
 | `space.propagate(...)` | propagate all bodies created in this script context |
 | `space.energy()`, `space.angular_momentum()` | invariants of the initial body states |
-| `system.energy_drift()`, `space.energy_drift()` | largest relative energy change of the last `propagate` (needs v0.1.2) |
+| `system.energy_drift()`, `space.energy_drift()` | largest relative energy change of the last `propagate` |
 | `vector(x,y,z)`, `state(position,velocity)` | vector and Cartesian state objects |
 | `elements(a,e,i,raan,argp,nu).to_state(mu)` | state from classical orbital elements |
 | `to_elements(state,mu)`, `body.elements(central_mu)` | classical orbital elements |
