@@ -1,5 +1,8 @@
 // lmspace: orbital mechanics and astronomy scripting host.
 #include "dslvm.hpp"
+#include "stdlib/string.hpp"
+#include "stdlib/collections.hpp"
+#include "stdlib/testing.hpp"
 #include "memory_budget.hpp"
 #include "notices_embedded.hpp"
 #include "orbit.hpp"
@@ -33,6 +36,7 @@ using lmspace::Vec3;
 
 struct System;
 struct Host {
+  dslvm::stdlib::Collections collections;
   std::vector<std::unique_ptr<System>> systems;
   std::vector<std::unique_ptr<Elements>> elements;
   std::vector<std::unique_ptr<Matrix>> matrices;
@@ -165,6 +169,9 @@ std::string fmt(double x) {
 }
 
 void register_host(dslvm::Registry &r, Host &h) {
+  dslvm::stdlib::register_string(r);
+  dslvm::stdlib::register_collections(r, h.collections);
+  dslvm::stdlib::register_testing(r);
   r.context("space", "Space");
   check(r, "Space", "body", {"string", "float"}, "Body", [](void *p, Args &a) {
     Body b;
@@ -367,16 +374,11 @@ void register_host(dslvm::Registry &r, Host &h) {
   checkfn(r, "hohmann", {"float", "float", "float"}, "Matrix", [&h](Args &a) {
     return h.matrix(lmspace::hohmann(a[0].f, a[1].f, a[2].f));
   });
-  checkfn(r, "assert_close", {"float", "float", "float"}, "void", [](Args &a) {
-    if (!std::isfinite(a[0].f) || !std::isfinite(a[1].f) ||
-        !std::isfinite(a[2].f) || a[2].f < 0 ||
-        std::fabs(a[0].f - a[1].f) > a[2].f)
-      throw dslvm::Error("assert_close failed: " + fmt(a[0].f) + " vs " +
-                         fmt(a[1].f));
-    return Value::none();
-  });
-  checkfn(r, "print", {"string"}, "void", [](Args &a) {
-    std::cout << a[0].s << '\n';
+  // Physical comparisons retain a finite-only variant beside the common testing API.
+  checkfn(r, "space_assert_close", {"float", "float", "float"}, "void", [](Args &a) {
+    if (!std::isfinite(a[0].f) || !std::isfinite(a[1].f) || !std::isfinite(a[2].f) || a[2].f < 0)
+      throw dslvm::Error("space_assert_close: arguments and tolerance must be finite; tolerance must be nonnegative");
+    dslvm::stdlib::testing_assert_close(a[0].f, a[1].f, a[2].f);
     return Value::none();
   });
 }
@@ -479,6 +481,7 @@ int main(int argc, char **argv) {
   }
   for (const auto &p : programs) {
     try {
+      h.collections.reset();
       p.run(ctx, reg);
     } catch (const dslvm::Error &e) {
       return dslvm::report_error("run", e);

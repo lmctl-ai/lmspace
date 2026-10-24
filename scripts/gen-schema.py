@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
-"""Regenerate schema/lmspace.dsl.json from the method(...) registrations in cpp/main.cpp so the
-schema and the host cannot drift. test.sh still diffs the registry against the compiler."""
-import json, pathlib, re
+"""Generate the domain and SDK catalog schema from the host's canonical registry."""
+import json
+import pathlib
+import re
+import subprocess
+import sys
 root = pathlib.Path(__file__).resolve().parent.parent
-src = (root / "cpp/main.cpp").read_text()
-types = {}
-for m in re.finditer(r'(?:check|method)\(\s*r,\s*"(\w+)",\s*"(\w+)",\s*\{([^}]*)\},\s*"(\w+)"', src):
-    t, n, ps, rt = m.groups()
-    params = [p.strip().strip('"') for p in ps.split(",") if p.strip()]
-    types.setdefault(t, {"methods": {}})["methods"].setdefault(n, []).append({"params": params, "returns": rt})
-functions = {}
-for m in re.finditer(r'(?:checkfn|function)\(\s*r,\s*"(\w+)",\s*\{([^}]*)\},\s*"(\w+)"', src):
-    n, ps, rt = m.groups()
-    params = [p.strip().strip('"') for p in ps.split(",") if p.strip()]
-    functions.setdefault(n, []).append({"params": params, "returns": rt})
-schema = {"dsl.schema": 2, "name": "lmspace", "types": types, "functions": functions, "context": {"space": "Space"}}
-with open(root / "schema/lmspace.dsl.json", "w", newline="\n") as f:
-    f.write(json.dumps(schema, indent=2) + "\n")
-print({t: len(v["methods"]) for t, v in types.items()})
+host = sys.argv[1] if len(sys.argv) > 1 else str(root / "build/lmspace")
+lines = subprocess.check_output([host, "--dsl-signatures"], text=True).splitlines()
+types, functions, context = {}, {}, {}
+pattern = re.compile(r"^(?:fn (\w+)|method (\w+)\.(\w+))\((.*?)\) -> (\w+)$")
+for line in lines:
+    if line.startswith("context "):
+        name, typ = line[8:].split(": ")
+        context[name] = typ
+        continue
+    match = pattern.fullmatch(line)
+    if not match:
+        raise SystemExit("unparsable registry signature: " + line)
+    fn, typ, method, params, returns = match.groups()
+    entry = {"params": params.split(", ") if params else [], "returns": returns}
+    if fn:
+        functions.setdefault(fn, []).append(entry)
+    else:
+        types.setdefault(typ, {"methods": {}})["methods"].setdefault(method, []).append(entry)
+schema = {"dsl.schema": 2, "name": "lmspace", "types": types, "functions": functions, "context": context}
+with open(root / "schema/lmspace.dsl.json", "w", newline="\n") as output:
+    output.write(json.dumps(schema, indent=2) + "\n")

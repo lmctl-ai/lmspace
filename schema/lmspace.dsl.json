@@ -2,8 +2,248 @@
   "dsl.schema": 2,
   "name": "lmspace",
   "types": {
+    "Body": {
+      "methods": {
+        "elements": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "Elements"
+          }
+        ],
+        "mu": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "name": [
+          {
+            "params": [],
+            "returns": "string"
+          }
+        ],
+        "propagate": [
+          {
+            "params": [
+              "float",
+              "float"
+            ],
+            "returns": "State"
+          }
+        ],
+        "state": [
+          {
+            "params": [],
+            "returns": "State"
+          }
+        ]
+      }
+    },
+    "Elements": {
+      "methods": {
+        "a": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "argp": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "e": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "i": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "nu": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "raan": [
+          {
+            "params": [],
+            "returns": "float"
+          }
+        ],
+        "to_state": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "State"
+          }
+        ]
+      }
+    },
+    "FloatList": {
+      "methods": {
+        "add": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "FloatList"
+          }
+        ],
+        "at": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "float"
+          }
+        ],
+        "clear": [
+          {
+            "params": [],
+            "returns": "FloatList"
+          }
+        ],
+        "contains": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "bool"
+          }
+        ],
+        "index_of": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "int"
+          }
+        ],
+        "len": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "set": [
+          {
+            "params": [
+              "int",
+              "float"
+            ],
+            "returns": "FloatList"
+          }
+        ]
+      }
+    },
+    "IntList": {
+      "methods": {
+        "add": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "IntList"
+          }
+        ],
+        "at": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "int"
+          }
+        ],
+        "clear": [
+          {
+            "params": [],
+            "returns": "IntList"
+          }
+        ],
+        "contains": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "bool"
+          }
+        ],
+        "index_of": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "int"
+          }
+        ],
+        "len": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "set": [
+          {
+            "params": [
+              "int",
+              "int"
+            ],
+            "returns": "IntList"
+          }
+        ]
+      }
+    },
+    "Matrix": {
+      "methods": {
+        "cols": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "get": [
+          {
+            "params": [
+              "int",
+              "int"
+            ],
+            "returns": "float"
+          }
+        ],
+        "rows": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "save_csv": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "void"
+          }
+        ]
+      }
+    },
     "Space": {
       "methods": {
+        "angular_momentum": [
+          {
+            "params": [],
+            "returns": "Vector"
+          }
+        ],
         "body": [
           {
             "params": [
@@ -26,28 +266,10 @@
             "returns": "Body"
           }
         ],
-        "system": [
+        "clear_kernels": [
           {
             "params": [],
-            "returns": "System"
-          }
-        ],
-        "propagate": [
-          {
-            "params": [
-              "float",
-              "int",
-              "float",
-              "string",
-              "float"
-            ],
-            "returns": "Matrix"
-          }
-        ],
-        "energy_drift": [
-          {
-            "params": [],
-            "returns": "float"
+            "returns": "void"
           }
         ],
         "energy": [
@@ -56,24 +278,10 @@
             "returns": "float"
           }
         ],
-        "angular_momentum": [
+        "energy_drift": [
           {
             "params": [],
-            "returns": "Vector"
-          }
-        ],
-        "load_kernel": [
-          {
-            "params": [
-              "string"
-            ],
-            "returns": "void"
-          }
-        ],
-        "clear_kernels": [
-          {
-            "params": [],
-            "returns": "void"
+            "returns": "float"
           }
         ],
         "ephemeris": [
@@ -97,24 +305,12 @@
             "returns": "Matrix"
           }
         ],
-        "time": [
+        "load_kernel": [
           {
             "params": [
               "string"
             ],
-            "returns": "float"
-          }
-        ]
-      }
-    },
-    "System": {
-      "methods": {
-        "add": [
-          {
-            "params": [
-              "Body"
-            ],
-            "returns": "System"
+            "returns": "void"
           }
         ],
         "propagate": [
@@ -129,10 +325,200 @@
             "returns": "Matrix"
           }
         ],
-        "energy_drift": [
+        "system": [
           {
             "params": [],
+            "returns": "System"
+          }
+        ],
+        "time": [
+          {
+            "params": [
+              "string"
+            ],
             "returns": "float"
+          }
+        ]
+      }
+    },
+    "State": {
+      "methods": {
+        "elements": [
+          {
+            "params": [
+              "float"
+            ],
+            "returns": "Elements"
+          }
+        ],
+        "position": [
+          {
+            "params": [],
+            "returns": "Vector"
+          }
+        ],
+        "propagate": [
+          {
+            "params": [
+              "float",
+              "float"
+            ],
+            "returns": "State"
+          }
+        ],
+        "velocity": [
+          {
+            "params": [],
+            "returns": "Vector"
+          }
+        ]
+      }
+    },
+    "StrList": {
+      "methods": {
+        "add": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "StrList"
+          }
+        ],
+        "at": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "string"
+          }
+        ],
+        "clear": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
+        ],
+        "contains": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "bool"
+          }
+        ],
+        "index_of": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "int"
+          }
+        ],
+        "join": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "string"
+          }
+        ],
+        "len": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "set": [
+          {
+            "params": [
+              "int",
+              "string"
+            ],
+            "returns": "StrList"
+          }
+        ]
+      }
+    },
+    "StrMap": {
+      "methods": {
+        "clear": [
+          {
+            "params": [],
+            "returns": "StrMap"
+          }
+        ],
+        "get": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "string"
+          }
+        ],
+        "get_or": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "string"
+          }
+        ],
+        "has": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "bool"
+          }
+        ],
+        "key_at": [
+          {
+            "params": [
+              "int"
+            ],
+            "returns": "string"
+          }
+        ],
+        "len": [
+          {
+            "params": [],
+            "returns": "int"
+          }
+        ],
+        "remove": [
+          {
+            "params": [
+              "string"
+            ],
+            "returns": "bool"
+          }
+        ],
+        "set": [
+          {
+            "params": [
+              "string",
+              "string"
+            ],
+            "returns": "StrMap"
+          }
+        ]
+      }
+    },
+    "System": {
+      "methods": {
+        "add": [
+          {
+            "params": [
+              "Body"
+            ],
+            "returns": "System"
+          }
+        ],
+        "angular_momentum": [
+          {
+            "params": [],
+            "returns": "Vector"
           }
         ],
         "energy": [
@@ -141,82 +527,22 @@
             "returns": "float"
           }
         ],
-        "angular_momentum": [
-          {
-            "params": [],
-            "returns": "Vector"
-          }
-        ]
-      }
-    },
-    "Body": {
-      "methods": {
-        "name": [
-          {
-            "params": [],
-            "returns": "string"
-          }
-        ],
-        "mu": [
+        "energy_drift": [
           {
             "params": [],
             "returns": "float"
           }
         ],
-        "state": [
-          {
-            "params": [],
-            "returns": "State"
-          }
-        ],
-        "elements": [
-          {
-            "params": [
-              "float"
-            ],
-            "returns": "Elements"
-          }
-        ],
         "propagate": [
           {
             "params": [
               "float",
-              "float"
-            ],
-            "returns": "State"
-          }
-        ]
-      }
-    },
-    "State": {
-      "methods": {
-        "position": [
-          {
-            "params": [],
-            "returns": "Vector"
-          }
-        ],
-        "velocity": [
-          {
-            "params": [],
-            "returns": "Vector"
-          }
-        ],
-        "propagate": [
-          {
-            "params": [
+              "int",
               "float",
+              "string",
               "float"
             ],
-            "returns": "State"
-          }
-        ],
-        "elements": [
-          {
-            "params": [
-              "float"
-            ],
-            "returns": "Elements"
+            "returns": "Matrix"
           }
         ]
       }
@@ -250,107 +576,17 @@
           }
         ]
       }
-    },
-    "Elements": {
-      "methods": {
-        "a": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "e": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "i": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "raan": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "argp": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "nu": [
-          {
-            "params": [],
-            "returns": "float"
-          }
-        ],
-        "to_state": [
-          {
-            "params": [
-              "float"
-            ],
-            "returns": "State"
-          }
-        ]
-      }
-    },
-    "Matrix": {
-      "methods": {
-        "rows": [
-          {
-            "params": [],
-            "returns": "int"
-          }
-        ],
-        "cols": [
-          {
-            "params": [],
-            "returns": "int"
-          }
-        ],
-        "get": [
-          {
-            "params": [
-              "int",
-              "int"
-            ],
-            "returns": "float"
-          }
-        ],
-        "save_csv": [
-          {
-            "params": [
-              "string"
-            ],
-            "returns": "void"
-          }
-        ]
-      }
     }
   },
   "functions": {
-    "vector": [
+    "assert_close": [
       {
         "params": [
           "float",
           "float",
           "float"
         ],
-        "returns": "Vector"
-      }
-    ],
-    "state": [
-      {
-        "params": [
-          "Vector",
-          "Vector"
-        ],
-        "returns": "State"
+        "returns": "void"
       }
     ],
     "elements": [
@@ -366,22 +602,10 @@
         "returns": "Elements"
       }
     ],
-    "kepler": [
+    "float_list": [
       {
-        "params": [
-          "float",
-          "float"
-        ],
-        "returns": "float"
-      }
-    ],
-    "period": [
-      {
-        "params": [
-          "float",
-          "float"
-        ],
-        "returns": "float"
+        "params": [],
+        "returns": "FloatList"
       }
     ],
     "from_elements": [
@@ -393,13 +617,29 @@
         "returns": "State"
       }
     ],
-    "to_elements": [
+    "hohmann": [
       {
         "params": [
-          "State",
+          "float",
+          "float",
           "float"
         ],
-        "returns": "Elements"
+        "returns": "Matrix"
+      }
+    ],
+    "int_list": [
+      {
+        "params": [],
+        "returns": "IntList"
+      }
+    ],
+    "kepler": [
+      {
+        "params": [
+          "float",
+          "float"
+        ],
+        "returns": "float"
       }
     ],
     "lambert": [
@@ -414,24 +654,13 @@
         "returns": "Matrix"
       }
     ],
-    "hohmann": [
+    "period": [
       {
         "params": [
           "float",
-          "float",
           "float"
         ],
-        "returns": "Matrix"
-      }
-    ],
-    "assert_close": [
-      {
-        "params": [
-          "float",
-          "float",
-          "float"
-        ],
-        "returns": "void"
+        "returns": "float"
       }
     ],
     "print": [
@@ -440,6 +669,203 @@
           "string"
         ],
         "returns": "void"
+      }
+    ],
+    "space_assert_close": [
+      {
+        "params": [
+          "float",
+          "float",
+          "float"
+        ],
+        "returns": "void"
+      }
+    ],
+    "state": [
+      {
+        "params": [
+          "Vector",
+          "Vector"
+        ],
+        "returns": "State"
+      }
+    ],
+    "str_contains": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_ends_with": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_find": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "int"
+      }
+    ],
+    "str_is_float": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_is_int": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_len": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "int"
+      }
+    ],
+    "str_list": [
+      {
+        "params": [],
+        "returns": "StrList"
+      }
+    ],
+    "str_lower": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "string"
+      }
+    ],
+    "str_map": [
+      {
+        "params": [],
+        "returns": "StrMap"
+      }
+    ],
+    "str_match": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_repeat": [
+      {
+        "params": [
+          "string",
+          "int"
+        ],
+        "returns": "string"
+      }
+    ],
+    "str_replace": [
+      {
+        "params": [
+          "string",
+          "string",
+          "string"
+        ],
+        "returns": "string"
+      }
+    ],
+    "str_split": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "StrList"
+      }
+    ],
+    "str_starts_with": [
+      {
+        "params": [
+          "string",
+          "string"
+        ],
+        "returns": "bool"
+      }
+    ],
+    "str_substr": [
+      {
+        "params": [
+          "string",
+          "int",
+          "int"
+        ],
+        "returns": "string"
+      }
+    ],
+    "str_to_float": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "float"
+      }
+    ],
+    "str_to_int": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "int"
+      }
+    ],
+    "str_trim": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "string"
+      }
+    ],
+    "str_upper": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "string"
+      }
+    ],
+    "to_elements": [
+      {
+        "params": [
+          "State",
+          "float"
+        ],
+        "returns": "Elements"
+      }
+    ],
+    "vector": [
+      {
+        "params": [
+          "float",
+          "float",
+          "float"
+        ],
+        "returns": "Vector"
       }
     ]
   },

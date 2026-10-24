@@ -11,3 +11,5 @@
 - [09-resource-limits.md](09-resource-limits.md): total memory budget (`LMSPACE_MAX_MEMORY_MB`) and how it is counted.
 
 - [10-linux-glibc.md](10-linux-glibc.md): Linux system-glibc baseline, linkage audit and release verification.
+
+- [11-sdk-catalog.md](11-sdk-catalog.md): SDK catalogs, schema generation and finite physical assertions.
