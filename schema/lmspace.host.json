@@ -334,6 +334,16 @@
     }
   },
   "functions": {
+    "assert_close": [
+      {
+        "params": [
+          "float",
+          "float",
+          "float"
+        ],
+        "returns": "void"
+      }
+    ],
     "elements": [
       {
         "params": [
@@ -394,6 +404,14 @@
           "float"
         ],
         "returns": "float"
+      }
+    ],
+    "print": [
+      {
+        "params": [
+          "string"
+        ],
+        "returns": "void"
       }
     ],
     "space_assert_close": [
