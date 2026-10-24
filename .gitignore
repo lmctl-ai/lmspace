@@ -3,4 +3,5 @@ third_party/
 dist/
 .ci-bin/
 *.dslb
+schema/lmspace.dsl.json
 __pycache__/

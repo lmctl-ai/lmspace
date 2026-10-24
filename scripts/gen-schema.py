@@ -25,5 +25,7 @@ for line in lines:
     else:
         types.setdefault(typ, {"methods": {}})["methods"].setdefault(method, []).append(entry)
 schema = {"dsl.schema": 2, "name": "lmspace", "types": types, "functions": functions, "context": context}
-with open(root / "schema/lmspace.dsl.json", "w", newline="\n") as output:
-    output.write(json.dumps(schema, indent=2) + "\n")
+raw = (json.dumps(schema, indent=2) + "\n").encode("utf-8")
+merged = subprocess.run([sys.executable, str(root / "scripts/merge-std.py"), "--host-only", "-", "-"], input=raw, capture_output=True, check=True)
+with open(root / "schema/lmspace.host.json", "wb") as output:
+    output.write(merged.stdout)

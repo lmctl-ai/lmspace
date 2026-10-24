@@ -1,8 +1,5 @@
 // lmspace: orbital mechanics and astronomy scripting host.
 #include "dslvm.hpp"
-#include "stdlib/string.hpp"
-#include "stdlib/collections.hpp"
-#include "stdlib/testing.hpp"
 #include "memory_budget.hpp"
 #include "notices_embedded.hpp"
 #include "orbit.hpp"
@@ -36,7 +33,6 @@ using lmspace::Vec3;
 
 struct System;
 struct Host {
-  dslvm::stdlib::Collections collections;
   std::vector<std::unique_ptr<System>> systems;
   std::vector<std::unique_ptr<Elements>> elements;
   std::vector<std::unique_ptr<Matrix>> matrices;
@@ -169,9 +165,6 @@ std::string fmt(double x) {
 }
 
 void register_host(dslvm::Registry &r, Host &h) {
-  dslvm::stdlib::register_string(r);
-  dslvm::stdlib::register_collections(r, h.collections);
-  dslvm::stdlib::register_testing(r);
   r.context("space", "Space");
   check(r, "Space", "body", {"string", "float"}, "Body", [](void *p, Args &a) {
     Body b;
@@ -481,7 +474,6 @@ int main(int argc, char **argv) {
   }
   for (const auto &p : programs) {
     try {
-      h.collections.reset();
       p.run(ctx, reg);
     } catch (const dslvm::Error &e) {
       return dslvm::report_error("run", e);
