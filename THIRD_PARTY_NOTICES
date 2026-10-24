@@ -90,7 +90,7 @@ other tortious action, arising out of or in connection with the
 use or performance of this software.
 
 ================================================================================
-cpp-dsl-sdk (MIT)
+lmcode-cpp (MIT)
 ================================================================================
 
 The vendored scripting SDK header is fetched from the pinned SDK source by
