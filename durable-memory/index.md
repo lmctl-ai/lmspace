@@ -9,3 +9,5 @@
 - [07-examples.md](07-examples.md): runnable physics examples and CSV exchange.
 - [08-open-items.md](08-open-items.md): remaining scope.
 - [09-resource-limits.md](09-resource-limits.md): total memory budget (`LMSPACE_MAX_MEMORY_MB`) and how it is counted.
+
+- [10-linux-glibc.md](10-linux-glibc.md): Linux system-glibc baseline, linkage audit and release verification.

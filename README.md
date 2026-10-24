@@ -1,6 +1,6 @@
 # lmspace
 
-**Orbital mechanics for lmscript: N-body integration, Kepler, Lambert and Hohmann, SPICE frames, in one static executable.**
+**Orbital mechanics for lmscript: N-body integration, Kepler, Lambert and Hohmann, SPICE frames, in one executable.**
 
 [![CI](https://github.com/lmctl-ai/lmspace/actions/workflows/ci.yml/badge.svg)](https://github.com/lmctl-ai/lmspace/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/lmctl-ai/lmspace?label=release)](https://github.com/lmctl-ai/lmspace/releases)
@@ -74,11 +74,13 @@
 | --- | --- |
 | Equal-mass binary, one period, closed form checked.<br>`lmctl autorun https://raw.githubusercontent.com/lmctl-ai/lmspace/main/examples/orbit_csv.lms` |  |
 
-Every picture is made by the script named under it: it runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot), [lmdraw](https://github.com/lmctl-ai/lmdraw) or [lmblender](https://github.com/lmctl-ai/lmblender) and writes `images/` into the current directory. All 28 run on the released lmspace v0.1.1. Two fetch data over HTTP (a Natural Earth map, two NAIF kernels); the GIFs need ffmpeg. `examples/render-all.sh` regenerates `docs/images/`.
+Every picture is made by the script named under it: it runs the computation with lmspace, draws with [lmplot](https://github.com/lmctl-ai/lmplot), [lmdraw](https://github.com/lmctl-ai/lmdraw) or [lmblender](https://github.com/lmctl-ai/lmblender) and writes `images/` into the current directory. All 28 run on released lmspace v0.1.2 or newer. Two fetch data over HTTP (a Natural Earth map, two NAIF kernels); the GIFs need ffmpeg. `examples/render-all.sh` regenerates `docs/images/`.
 
 **Quick start:** `npm i -g @lmctl-ai/lmctl`, then paste any `lmctl autorun` line above into a terminal; it downloads lmspace and the drawing host and writes the picture to `images/`.
 
-Orbital mechanics and astronomy for lmscript in one static executable. Original MIT numerical algorithms provide N-body integration, Kepler propagation, orbital elements, Lambert transfers and Hohmann maneuvers. NASA NAIF CSPICE provides frames and ephemerides from user-supplied kernels.
+Linux downloads require **dynamic glibc >= 2.35** (Ubuntu 22.04 or newer).
+
+Orbital mechanics and astronomy for lmscript in one executable. Original MIT numerical algorithms provide N-body integration, Kepler propagation, orbital elements, Lambert transfers and Hohmann maneuvers. NASA NAIF CSPICE provides frames and ephemerides from user-supplied kernels.
 
 ```lmscript
 p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
@@ -125,7 +127,7 @@ SPICE uses ET seconds past J2000, with no aberration correction (`NONE`). Build 
 
 ## Examples and verification
 
-Every program under [tests/](tests/) and [examples/](examples/) compiles and asserts known answers. `./test.sh` builds the binary, runs native physics tests and DSL programs, verifies pins/schema/signatures/notices/static linking, checks deterministic CSV reruns, and exercises usage, dry run and runtime errors. Native SPICE tests generate their own tiny synthetic SPK at runtime, with no downloaded kernels. Physics checks cover energy and angular momentum, Kepler's period, Hohmann delta-v, Lambert endpoints, orbital conversion degeneracies and Earth–Moon scales.
+Every program under [tests/](tests/) and [examples/](examples/) compiles and asserts known answers. `./test.sh` builds the binary, runs native physics tests and DSL programs, verifies pins, schema, signatures, notices and the Linux dependency/ABI policy, checks deterministic CSV reruns, and exercises usage, dry run and runtime errors. Native SPICE tests generate their own tiny synthetic SPK at runtime, with no downloaded kernels. Physics checks cover energy and angular momentum, Kepler's period, Hohmann delta-v, Lambert endpoints, orbital conversion degeneracies and Earth–Moon scales.
 
 ```sh
 scripts/sync-deps.sh
@@ -134,7 +136,11 @@ cmake --build build --parallel 4
 ./test.sh
 ```
 
-Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.369`) for the tests. Linux executables are fully static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
+Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.369`) for the tests. Linux uses dynamic glibc >= 2.35, with CSPICE and the GCC C++ runtimes static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
+
+`lmspace --version` remains exactly `lmspace X.Y.Z` for installer compatibility.
+The Linux runtime baseline applies to x64 and ARM64; no relink-object archive
+or third-party shared libraries are required.
 
 ## Resource limits
 
