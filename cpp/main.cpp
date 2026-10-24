@@ -1,5 +1,6 @@
 // lmspace: orbital mechanics and astronomy scripting host.
 #include "dslvm.hpp"
+#include "stdlib/testing.hpp"
 #include "memory_budget.hpp"
 #include "notices_embedded.hpp"
 #include "orbit.hpp"
@@ -165,6 +166,7 @@ std::string fmt(double x) {
 }
 
 void register_host(dslvm::Registry &r, Host &h) {
+  dslvm::stdlib::register_testing(r);
   r.context("space", "Space");
   check(r, "Space", "body", {"string", "float"}, "Body", [](void *p, Args &a) {
     Body b;
