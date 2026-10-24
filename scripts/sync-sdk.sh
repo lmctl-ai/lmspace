@@ -10,7 +10,7 @@ if [ "${1:-}" = "--verify" ]; then
   count=0
   while IFS='=' read -r key want; do
     case "$key" in
-      sha256.cpp/*)
+      sha256.*)
         file="${key#sha256.}"
         [ -f "$HERE/$file" ] && [ "$(hash "$HERE/$file")" = "$want" ] || { echo "$file differs from sdk.lock: run scripts/sync-sdk.sh" >&2; exit 1; }
         count=$((count+1)) ;;
