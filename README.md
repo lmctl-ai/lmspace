@@ -136,7 +136,7 @@ cmake --build build --parallel 4
 ./test.sh
 ```
 
-Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.419`) for the tests. Linux uses dynamic glibc >= 2.35, with CSPICE and the GCC C++ runtimes static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
+Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.420`) for the tests. Linux uses dynamic glibc >= 2.35, with CSPICE and the GCC C++ runtimes static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
 
 `lmspace --version` remains exactly `lmspace X.Y.Z` for installer compatibility.
 The Linux runtime baseline applies to x64 and ARM64; no relink-object archive

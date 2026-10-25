@@ -47,9 +47,22 @@ cmp -s "$WORK/schema.json" schema/lmspace.dsl.json || fail "embedded schema diff
 ok "--dsl-schema --json prints byte-identical embedded schema bytes"
 diff -u <("$LMSCRIPT" --dsl-signatures schema/lmspace.dsl.json) <("$HOST" --dsl-signatures) || fail "host/compiler signatures differ"
 ok "host registry matches compiler signatures"
-python3 scripts/merge-std.py --normalize-signatures schema/lmspace.host.json "$WORK/normalized.signatures" || fail "host-only schema normalization"
-diff -u "$WORK/normalized.signatures" <("$HOST" --dsl-signatures) || fail "normalized host schema signatures differ"
-ok "host-only schema normalizes to the full registry"
+cmp schema/lmspace.host.json schema/lmspace.dsl.json || fail "generated schema differs from host-only input"
+python3 scripts/merge-std.py --host-only schema/lmspace.dsl.json "$WORK/host-only-schema.json"
+cmp schema/lmspace.dsl.json "$WORK/host-only-schema.json" || fail "embedded schema still declares standard members"
+"$HOST" --dsl-signatures >"$WORK/registry-signatures.txt"
+"$LMSCRIPT" --dsl-signatures cpp/std/lmcode-std.schema.json >"$WORK/standard-signatures.txt"
+python3 - "$WORK" <<'PYHOST'
+from pathlib import Path
+import sys
+work=Path(sys.argv[1])
+registry=set((work/'registry-signatures.txt').read_text().splitlines())
+standard=set((work/'standard-signatures.txt').read_text().splitlines())
+assert len(standard)==72, len(standard)
+(work/'host-signatures.txt').write_bytes(''.join(line+'\n' for line in sorted(registry-standard)).encode('utf-8'))
+PYHOST
+diff -u <("$LMSCRIPT" --dsl-signatures schema/lmspace.dsl.json --without-std) "$WORK/host-signatures.txt" || fail "host-only registry/compiler signatures differ"
+ok "host-only schema bytes and --without-std parity retain domain and testing declarations"
 "$HOST" --notices | grep -q "NAIF" || fail "--notices missing third-party text"
 "$HOST" --notices | grep -q "Lucent Technologies" || fail "--notices missing the libf2c notice"
 ok "--notices prints the third-party license texts"
