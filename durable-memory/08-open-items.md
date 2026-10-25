@@ -8,3 +8,4 @@
 - Physics tests cover representative trajectories; they are not mission-design certification.
 - Energy-drift warning covers the mass-weighted total only; a test particle (tiny mu) passing too close to a planet under a coarse fixed step is not flagged. A per-particle check would need a reference potential.
 - The drift warning and kernel validation are on main after v0.1.1; they ship with the next tag (v0.1.2).
+- 2026-10-24 `_lmcode_` sweep: `durable-memory/07-examples.md` line 60 still says `end _dsl_` in prose; the sweep tool flagged it as unpaired/non-block text and left it. Both spellings remain valid, but that prose could be reworded to `_lmcode_` to match the examples.
