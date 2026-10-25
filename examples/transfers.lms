@@ -1,6 +1,6 @@
 mkdir("build/examples");
 mkdir("images");
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let h = hohmann(7000.0, 42164.0, mu);
 assert_close(h.get(0, 0), 2.336795782386, 0.000000001);
@@ -18,13 +18,13 @@ for (k in range(0, 60)) {
   let hh = hohmann(7000.0, r2, mu);
   print(str(r2 / 1000.0) + " " + str(abs(hh.get(0, 0)) + abs(hh.get(0, 1))) + " " + str(hh.get(0, 2) / 3600.0));
 }
-end _dsl_
+end _lmcode_
 savedsl(p, "build/transfers.dslb");
 r = system ${dsl_cli(p)} --dsl build/transfers.dslb;
 assert(r.code == 0);
 rows = r.stdout;
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/hohmann_sweep.png", 900, 560);
 plot.data("rows", ${rows});
 plot.cmd("set title 'Hohmann transfer from a 7000 km orbit: total delta-v and flight time vs target radius (lmspace)'");
@@ -39,7 +39,7 @@ plot.cmd("set arrow 1 from 42.164,graph 0 to 42.164,graph 1 nohead dt 3 lc rgb '
 plot.cmd("set label 1 'GEO' at 42.9,1.1");
 plot.cmd("plot $rows every ::0::59 using 1:2 with lines lw 3 lc rgb '#1f77b4' title 'total delta-v (left)', $rows every ::0::59 using 1:3 axes x1y2 with lines lw 3 lc rgb '#d62728' title 'flight time (right)'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/hohmann_sweep-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/hohmann_sweep-draw.dslb;
 assert(r.code == 0);

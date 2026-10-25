@@ -1,4 +1,4 @@
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let a = space.body("a", 1.0, -0.5, 0.0, 0.0, 0.0, -0.7071067811865475, 0.0);
 let b = space.body("b", 1.0, 0.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.0);
 let binary = space.system().add(a).add(b);
@@ -25,5 +25,5 @@ for (i in range(0, out.rows())) {
   assert_close(energy, energy0, 0.000001);
   assert_close(hz, h0, 0.000000001);
 }
-end _dsl_
+end _lmcode_
 savedsl(p, "build/systems.dslb");

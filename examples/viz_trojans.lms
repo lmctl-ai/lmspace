@@ -7,7 +7,7 @@
 # Output: images/trojans.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mj = 0.001;
 let sun = space.body("sun", 1.0 - mj, 0.0 - mj, 0.0, 0.0, 0.0, 0.0 - mj, 0.0);
 let jup = space.body("jupiter", mj, 1.0 - mj, 0.0, 0.0, 0.0, 1.0 - mj, 0.0);
@@ -24,13 +24,13 @@ for (k in range(0, 3001)) {
   assert_close(r3, 1.0, 0.1);
 }
 out.save_csv("build/examples/trojans.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_trojans-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_trojans-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/trojans.png", 900, 760);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Trojan asteroids in the frame rotating with Jupiter (lmspace, 24 Jupiter years)'");
@@ -57,7 +57,7 @@ plot.cmd("rx(x,y,t) = x*cos(t) + y*sin(t)");
 plot.cmd("ry(x,y,t) = -x*sin(t) + y*cos(t)");
 plot.cmd("plot 'build/examples/trojans.csv' skip 1 using (rx($14,$15,$1)):(ry($14,$15,$1)) with lines lw 1.5 lc rgb '#1f77b4' title 'start 7 deg ahead of L4', '' skip 1 using (rx($20,$21,$1)):(ry($20,$21,$1)) with lines lw 1.5 lc rgb '#d62728' title 'starts 26 deg behind L4', '' skip 1 using (rx($26,$27,$1)):(ry($26,$27,$1)) with lines lw 1.5 lc rgb '#2ca02c' title 'starts 31 deg from Jupiter'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_trojans-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_trojans-draw.dslb;
 assert(r.code == 0);

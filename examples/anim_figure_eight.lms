@@ -5,7 +5,7 @@
 mkdir("build/examples");
 mkdir("build/rendered");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let a = space.body("a", 1.0, -0.97000436, 0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
 let b = space.body("b", 1.0, 0.97000436, -0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
 let c = space.body("c", 1.0, 0.0, 0.0, 0.0, -0.93240737, -0.86473146, 0.0);
@@ -13,7 +13,7 @@ let out = space.system().add(a).add(b).add(c).propagate(6.32591398, 1201, 0.001,
 assert_close(out.get(1200, 1), -0.97000436, 0.000001);
 assert_close(out.get(1200, 7), 0.97000436, 0.000001);
 out.save_csv("build/examples/anim_figure_eight.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/anim_figure_eight-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/anim_figure_eight-sim.dslb;
 assert(r.code == 0);
@@ -43,7 +43,7 @@ for (f in range(0, 100)) {
   yc2 = yc - 60.0 * m.get("cvy", 0.0);
   tl = sprintf("t = %.2f of 6.33", m.get("t", 0.0));
   frame = "build/rendered/g" + sprintf("%03d", f) + ".png";
-  d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+  d = _lmcode_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
   scene.canvas(700, 420, "#0f1720");
   scene.text(24.0, 34.0, 18.0, "Figure-eight three-body orbit (lmspace, RK45)", "#e6edf3");
   scene.text(24.0, 58.0, 13.0, ${tl}, "#9fb3c8");
@@ -55,7 +55,7 @@ for (f in range(0, 100)) {
   scene.circle(${xb}, ${yb}, 10.0, "#ff6b6b");
   scene.circle(${xc}, ${yc}, 10.0, "#7bd88f");
   scene.render_png(${frame}, 700, 420, 1);
-end _dsl_
+end _lmcode_
   savedsl(d, "build/frame.dslb");
   r = system ${dsl_cli(d)} --dsl build/frame.dslb;
   assert(r.code == 0);

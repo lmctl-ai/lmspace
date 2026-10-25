@@ -7,7 +7,7 @@
 # Output: images/three_body_zoo.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 for (c in range(0, 6)) {
   # butterfly I, butterfly II, moth I, yin-yang Ia, dragonfly, goggles
   let p1 = 0.306893;
@@ -39,13 +39,13 @@ for (c in range(0, 6)) {
   assert_close(sys.angular_momentum().z(), 0.0, 0.000000000001);
   out.save_csv("build/examples/zoo_" + str(c) + ".csv");
 }
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_three_body_zoo-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_three_body_zoo-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/three_body_zoo.png", 1200, 760);
 plot.cmd("set datafile separator ','");
 plot.cmd("set multiplot layout 2,3 title 'Periodic three-body orbits (Suvakov and Dmitrasinovic 2013), integrated for one period by lmspace' font ',14'");
@@ -70,7 +70,7 @@ plot.cmd("set title 'goggles, T = 10.47'");
 plot.cmd("plot for [j=0:2] 'build/examples/zoo_5.csv' using (column(2+6*j)):(column(3+6*j)) with lines lw 2 lc rgb col(j), for [j=0:2] '' every ::0::0 using (column(2+6*j)):(column(3+6*j)) with points pt 7 ps 1.4 lc rgb col(j)");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_three_body_zoo-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_three_body_zoo-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

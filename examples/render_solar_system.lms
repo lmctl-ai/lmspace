@@ -7,7 +7,7 @@
 # Output: images/solar_system_3d.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 0.01720209895 * 0.01720209895;
 let deg = 0.017453292519943295;
 let s = 2.0;
@@ -44,7 +44,7 @@ for (p in range(0, 4)) {
   print("orbit|" + path);
   print("planet|" + str(nx) + "|" + str(ny) + "|" + str(nz));
 }
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/render_solar_system-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/render_solar_system-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
@@ -64,7 +64,7 @@ x1 = p.get(1, []).get(0, 0.0); y1 = p.get(1, []).get(1, 0.0); z1 = p.get(1, []).
 x2 = p.get(2, []).get(0, 0.0); y2 = p.get(2, []).get(1, 0.0); z2 = p.get(2, []).get(2, 0.0);
 x3 = p.get(3, []).get(0, 0.0); y3 = p.get(3, []).get(1, 0.0); z3 = p.get(3, []).get(2, 0.0);
 
-b = _dsl_ cli="lmblender" install="github:lmctl-ai/lmblender@latest";
+b = _lmcode_ cli="lmblender" install="github:lmctl-ai/lmblender@latest";
 scene.world_color(0.006, 0.008, 0.014, 1.0);
 let sun = scene.glow_orb(0.0, 0.0, 0.0, 0.2, 1.0, 0.8, 0.45, 60.0);
 let c0 = scene.material(0.6, 0.6, 0.62, 0.0, 0.5, 0.0, 0.55, 0.55, 0.6, 1.2);
@@ -98,7 +98,7 @@ s3.translate(${x3}, ${y3}, ${z3});
 scene.camera_look_at(0.8, -7.0, 2.4, 0.0, 0.0, -0.1, 34.0);
 scene.render_settings(6, 0, true);
 scene.render_png("images/solar_system_3d.png", 160, 1000, 560);
-end _dsl_
+end _lmcode_
 savedsl(b, "build/render_solar_system-render.dslb");
 r = system ${dsl_cli(b)} --dsl build/render_solar_system-render.dslb;
 if (r.code != 0) { println(r.stdout); println(r.stderr); }

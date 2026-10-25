@@ -11,7 +11,7 @@ mkdir("images");
 write_file("build/kernels/naif0012.tls", http_get("https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"));
 write_file("build/kernels/pck00011.tpc", http_get("https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc"));
 
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 space.load_kernel("build/kernels/naif0012.tls");
 space.load_kernel("build/kernels/pck00011.tpc");
 # ET - UTC on 1 January of every year: ET counts every SI second, the civil (day-count) clock does not.
@@ -59,7 +59,7 @@ assert_close(0.5 * (tr3 - 1.0), cos(0.9856 * 0.017453292519943295), 0.0000002);
 # obliquity of the ecliptic: the angle between the two z axes
 let ecl = space.frame("J2000", "ECLIPJ2000", 0.0);
 assert_close(ecl.get(2, 2), cos(23.4392911 * 0.017453292519943295), 0.0000001);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_spice_time-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_spice_time-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
@@ -67,7 +67,7 @@ assert(r.code == 0);
 write_file("build/examples/leap.txt", regex_replace(regex_replace(r.stdout, "gst [^\n]*\n", "", "g"), "\\{\"ok\".*", ""));
 write_file("build/examples/gst.txt", regex_replace(regex_replace(r.stdout, "leap [^\n]*\n", "", "g"), "\\{\"ok\".*", ""));
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/spice_time.png", 1200, 560);
 plot.cmd("set multiplot layout 1,2 title 'SPICE time and Earth orientation (lmspace + NAIF kernels naif0012.tls, pck00011.tpc)' font ',14'");
 plot.cmd("set grid");
@@ -93,7 +93,7 @@ plot.cmd("set arrow 1 from 215,36 to 258,4 lw 1.5 lc rgb 'black' front");
 plot.cmd("plot 'build/examples/gst.txt' using 2:3 with points pt 7 ps 0.5 lc rgb '#d62728' title 'space.frame(J2000, IAU_EARTH)' noenhanced");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_spice_time-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_spice_time-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

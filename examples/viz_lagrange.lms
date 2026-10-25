@@ -9,7 +9,7 @@
 # Output: images/lagrange.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 0.01215058560962404;
 # collinear points: Newton on dOmega/dx = 0 along the x axis, with a numerical derivative
 let lx1 = 0.8;
@@ -57,14 +57,14 @@ let bx = l4x + 0.02;
 let at4 = space.body("near L4", 0.000000000001, bx, l4y, 0.0, 0.0 - l4y, bx, 0.0);
 let run = space.system().add(earth).add(moon).add(at1).add(at4).propagate(68.0, 4001, 0.001, "rk45", 0.000000000001);
 run.save_csv("build/examples/lagrange.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_lagrange-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_lagrange-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println(r.stdout);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/lagrange.png", 1200, 760);
 plot.cmd("set datafile separator ','");
 plot.cmd("mu = 0.01215058560962404");
@@ -137,7 +137,7 @@ plot.cmd("unset key");
 plot.cmd("plot 'build/examples/lagrange.csv' using ($1*27.32/(2*pi)):(sqrt((rx($14,$15,$1)-0.836914)**2 + ry($14,$15,$1)**2)) with lines lw 2 lc rgb '#d62728', '' using ($1*27.32/(2*pi)):(sqrt((rx($20,$21,$1)-0.50785)**2 + (ry($20,$21,$1)-0.866025)**2)) with lines lw 2 lc rgb '#9467bd'");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_lagrange-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_lagrange-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

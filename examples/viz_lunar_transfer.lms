@@ -7,7 +7,7 @@
 # Output: images/lunar_transfer.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mue = 398600.4418;
 let mum = 4902.800066;
 let dm = 384400.0;
@@ -103,14 +103,14 @@ assert_close(tp / 86400.0, 4.0, 1.0);
 assert_close(loi, 0.9, 0.1);
 assert_close(rmin - 1737.4, 100.0, 15.0);
 assert_close(rmax - 1737.4, 100.0, 15.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_lunar_transfer-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_lunar_transfer-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 tp = regex_replace(regex_replace(r.stdout, "^.*\ntp ", "", "s"), "\n.*$", "", "s");
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/lunar_transfer.png", 1200, 680);
 plot.cmd("set datafile separator ','");
 plot.cmd("tp = " + ${tp});
@@ -143,7 +143,7 @@ plot.cmd("set object 2 circle at 0,0 size 1737.4 fc rgb '#bdbdbd' fillstyle soli
 plot.cmd("plot 'build/examples/lunar_coast.csv' using ($1 <= tp ? $14-$8 : NaN):($15-$9) with lines lw 3 lc rgb '#d62728' title 'approach hyperbola', 'build/examples/lunar_orbit.csv' using ($14-$8):($15-$9) with lines lw 3 lc rgb '#2ca02c' title '100 km lunar orbit, 2 days', 'build/examples/lunar_orbit.csv' every ::0::0 using ($14-$8):($15-$9) with points pt 7 ps 1.6 lc rgb 'black' title 'LOI burn'");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_lunar_transfer-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_lunar_transfer-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

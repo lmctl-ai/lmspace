@@ -1,7 +1,7 @@
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let r = space.frame("J2000", "ECLIPJ2000", 0.0);
 assert_close(r.get(0, 0), 1.0, 0.00000001);
 assert_close(r.get(1, 1), 0.9174820620691818, 0.000001);
 assert_close(r.get(2, 2), 0.9174820620691818, 0.000001);
-end _dsl_
+end _lmcode_
 savedsl(p, "build/frames.dslb");

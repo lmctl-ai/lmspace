@@ -4,7 +4,7 @@
 # Output: images/second_law.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let sun = space.body("sun", 1.0);
 let rock = space.body("rock", 0.000000000001, 0.3, 0.0, 0.0, 0.0, sqrt(1.7 / 0.3), 0.0);
 let sys = space.system().add(sun).add(rock);
@@ -19,12 +19,12 @@ assert_close(dots.get(24, 7), 0.3, 0.00001);
 assert_close(dots.get(24, 8), 0.0, 0.00001);
 dots.save_csv("build/examples/second_law_dots.csv");
 ell.save_csv("build/examples/second_law_orbit.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_second_law-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_second_law-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/second_law.png", 900, 700);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Second law of Kepler: 24 equal time steps sweep 24 equal areas (e = 0.7, lmspace)'");
@@ -38,7 +38,7 @@ plot.cmd("set xrange [-1.9:0.5]");
 plot.cmd("set yrange [-0.9:0.9]");
 plot.cmd("plot 'build/examples/second_law_orbit.csv' using 8:9 with lines lw 2 lc rgb '#1f77b4', 'build/examples/second_law_dots.csv' using (0):(0):8:9 with vectors nohead lc rgb '#888888', 'build/examples/second_law_dots.csv' using 8:9 with points pt 7 ps 1.5 lc rgb '#d62728'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/second_law-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/second_law-draw.dslb;
 assert(r.code == 0);

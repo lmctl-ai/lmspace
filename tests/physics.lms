@@ -1,4 +1,4 @@
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let pi = 3.141592653589793;
 assert_close(period(7000.0, mu), 5828.516637686015, 0.00000001);
@@ -19,5 +19,5 @@ let v2 = vv.x()*vv.x() + vv.y()*vv.y() + vv.z()*vv.z();
 assert_close(v2, mu * (2.0 / rn - 1.0 / 7000.0), 0.000000001);
 let h = hohmann(7000.0, 42164.0, mu);
 assert_close(h.get(0, 0), 2.3348, 0.01);
-end _dsl_
+end _lmcode_
 savedsl(p, "build/physics.dslb");

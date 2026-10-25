@@ -5,7 +5,7 @@
 # Output: images/porkchop.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let am = 1.524;
 let wm = pow(am, -1.5);
 let phase = 0.78;
@@ -32,13 +32,13 @@ for (i in range(0, 40)) {
 }
 assert_close(best, 5.6, 0.5);
 assert_close(best_tof * 58.13, 260.0, 40.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_porkchop-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_porkchop-sim.dslb;
 assert(r.code == 0);
 write_file("build/examples/porkchop.txt", r.stdout);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/porkchop.png", 950, 600);
 plot.cmd("set title 'Earth to Mars: total delta-v of every Lambert transfer (lmspace)'");
 plot.cmd("set xlabel 'departure date [days from the Hohmann launch window]'");
@@ -51,7 +51,7 @@ plot.cmd("set xrange [-390:390]");
 plot.cmd("set yrange [150:450]");
 plot.cmd("splot 'build/examples/porkchop.txt' every 1:1:0:0:30:39 using 1:2:3 with pm3d notitle");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_porkchop-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_porkchop-draw.dslb;
 assert(r.code == 0);

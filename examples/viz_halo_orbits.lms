@@ -9,7 +9,7 @@
 # Output: images/halo_orbits.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 0.01215058560962404;
 # Earth and Moon on circular orbits: G = 1, separation 1, angular speed 1 (one sidereal month = 2 pi)
 let earth = space.body("earth", 1.0 - mu, 0.0 - mu, 0.0, 0.0, 0.0, 0.0 - mu, 0.0);
@@ -99,13 +99,13 @@ for (orb in range(0, 2)) {
   if (orb == 0) { full.save_csv("build/examples/halo_l1.csv"); }
   if (orb == 1) { full.save_csv("build/examples/halo_l2.csv"); }
 }
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_halo_orbits-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_halo_orbits-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/halo_orbits.png", 1200, 640);
 plot.cmd("set datafile separator ','");
 plot.cmd("mu = 0.01215058560962404");
@@ -152,7 +152,7 @@ plot.cmd("set label 1 'Moon' at 0,-4 center front");
 plot.cmd("plot 'build/examples/halo_l2.csv' using (ry($14,$15,$1)*km/1000):($16*km/1000) with lines lw 3 lc rgb '#d62728'");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_halo_orbits-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_halo_orbits-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

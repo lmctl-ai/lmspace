@@ -8,7 +8,7 @@
 # Output: images/sun_synchronous.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let re = 6378.137;
 let j2 = 0.00108263;
@@ -62,14 +62,14 @@ for (k in range(0, 181)) {
   print("rate " + str(i) + " " + str(r4) + " " + str(r8));
   if (k == 52) { assert_close(r4, -5.0, 0.1); }
 }
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_sun_synchronous-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_sun_synchronous-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/sunsync.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/sun_synchronous.png", 1200, 560);
 plot.cmd("set multiplot layout 1,2 title 'Sun-synchronous orbits: let J2 turn the orbit plane once a year (lmspace)' font ',14'");
 plot.cmd("set grid");
@@ -96,7 +96,7 @@ plot.cmd("set label 5 'dashed: +0.9856 deg/day = sun-synchronous' at 175,-7.5 ri
 plot.cmd("plot 'build/examples/sunsync.txt' using (strcol(1) eq 'rate' ? $2 : NaN):3 with lines lw 3 lc rgb '#1f77b4' title '400 km', '' using (strcol(1) eq 'rate' ? $2 : NaN):4 with lines lw 3 lc rgb '#ff7f0e' title '800 km', 0.9856 with lines dt 2 lw 2 lc rgb 'black' notitle");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_sun_synchronous-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_sun_synchronous-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

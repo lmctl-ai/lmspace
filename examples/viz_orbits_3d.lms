@@ -4,7 +4,7 @@
 # Output: images/orbits_3d.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let el_o1 = elements(7000.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 let st_o1 = el_o1.to_state(mu);
@@ -34,12 +34,12 @@ let sat_o4 = space.body("sat", 0.000000000001, st_o4.position().x(), st_o4.posit
 let o_o4 = space.system().add(earth_o4).add(sat_o4).propagate(period(26560.0, mu), 300, 2.0, "rk45", 0.000000000001);
 assert_close(o_o4.get(299, 7), o_o4.get(0, 7), 0.01);
 o_o4.save_csv("build/examples/orbit3d_o4.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_orbits_3d-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_orbits_3d-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/orbits_3d.png", 1000, 800);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Four Earth orbits from classical elements (lmspace)'");
@@ -60,7 +60,7 @@ plot.cmd("set vrange [-pi/2:pi/2]");
 plot.cmd("set isosamples 24,12");
 plot.cmd("splot 6.378*cos(u)*cos(v), 6.378*sin(u)*cos(v), 6.378*sin(v) with lines lc rgb '#9ecae1' notitle, 'build/examples/orbit3d_o1.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#1f77b4' title 'LEO equatorial', 'build/examples/orbit3d_o2.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#2ca02c' title 'ISS-like, 51.6 deg', 'build/examples/orbit3d_o3.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#ff7f0e' title 'sun-synchronous, 97.8 deg', 'build/examples/orbit3d_o4.csv' using (column(8)/1000.0):(column(9)/1000.0):(column(10)/1000.0) with lines lw 2 lc rgb '#d62728' title 'GPS, 55 deg'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/orbits_3d-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/orbits_3d-draw.dslb;
 assert(r.code == 0);

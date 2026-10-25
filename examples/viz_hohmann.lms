@@ -4,7 +4,7 @@
 # Output: images/hohmann.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let h = hohmann(7000.0, 42164.0, mu);
 let v1 = sqrt(mu / 7000.0) + h.get(0, 0);
@@ -21,12 +21,12 @@ let svy = out.get(399, 11);
 assert_close(sqrt(svx * svx + svy * svy) + h.get(0, 1), sqrt(mu / 42164.0), 0.000001);
 assert_close(h.get(0, 2), 19000.0, 2000.0);
 out.save_csv("build/examples/hohmann.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_hohmann-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_hohmann-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/hohmann.png", 900, 760);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Hohmann transfer LEO to GEO (lmspace): 2.34 km/s at perigee, 1.43 km/s at apogee'");
@@ -44,7 +44,7 @@ plot.cmd("set xrange [-48:48]");
 plot.cmd("set yrange [-47:47]");
 plot.cmd("plot 6.378*cos(t), 6.378*sin(t) with filledcurves closed lc rgb '#9ecae1' title 'Earth', 7.0*cos(t), 7.0*sin(t) with lines lw 2 lc rgb '#1f77b4' title 'LEO 7000 km', 42.164*cos(t), 42.164*sin(t) with lines lw 2 lc rgb '#2ca02c' title 'GEO 42164 km', 'build/examples/hohmann.csv' using (column(8)/1000.0):(column(9)/1000.0) with lines lw 3 lc rgb '#d62728' title 'transfer ellipse'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/hohmann-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/hohmann-draw.dslb;
 assert(r.code == 0);

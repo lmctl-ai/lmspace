@@ -4,7 +4,7 @@
 # Output: images/energy_error.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let sun_e1 = space.body("sun", 1.0);
 let pl_e1 = space.body("planet", 0.000000000001, 0.4, 0.0, 0.0, 0.0, 2.0, 0.0);
 let o_e1 = space.system().add(sun_e1).add(pl_e1).propagate(314.159265358979, 600, 0.02, "symplectic", 0.000000001);
@@ -22,12 +22,12 @@ let pl_e4 = space.body("planet", 0.000000000001, 0.4, 0.0, 0.0, 0.0, 2.0, 0.0);
 let o_e4 = space.system().add(sun_e4).add(pl_e4).propagate(314.159265358979, 600, 0.1, "rk45", 0.000000000001000);
 o_e4.save_csv("build/examples/energy_e4.csv");
 assert_close(sqrt(1.0), 1.0, 0.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_energy_error-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_energy_error-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/energy_error.png", 900, 560);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Energy error over 50 orbits (e = 0.6): symplectic leapfrog vs adaptive RK45'");
@@ -42,7 +42,7 @@ plot.cmd("set xtics ('0' 0, '10' 62.83185307, '20' 125.6637061, '30' 188.4955592
 plot.cmd("e0 = 0.5*2.0**2 - 1.0/0.4");
 plot.cmd("plot 'build/examples/energy_e1.csv' using 1:(abs(0.5*($11**2+$12**2)-1.0/sqrt($8**2+$9**2)-e0)+1e-17) with lines lw 2 lc rgb '#d62728' title 'leapfrog dt = 0.02', 'build/examples/energy_e2.csv' using 1:(abs(0.5*($11**2+$12**2)-1.0/sqrt($8**2+$9**2)-e0)+1e-17) with lines lw 2 lc rgb '#ff7f0e' title 'leapfrog dt = 0.005', 'build/examples/energy_e3.csv' using 1:(abs(0.5*($11**2+$12**2)-1.0/sqrt($8**2+$9**2)-e0)+1e-17) with lines lw 2 lc rgb '#2ca02c' title 'RK45 tol 1e-8', 'build/examples/energy_e4.csv' using 1:(abs(0.5*($11**2+$12**2)-1.0/sqrt($8**2+$9**2)-e0)+1e-17) with lines lw 2 lc rgb '#1f77b4' title 'RK45 tol 1e-12'");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/energy_error-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/energy_error-draw.dslb;
 assert(r.code == 0);

@@ -8,7 +8,7 @@
 # Output: images/delta_v_map.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mue = 398600.4418;
 let mum = 4902.800066;
 let mus = 132712440018.0;
@@ -63,7 +63,7 @@ print("moi " + str(moi));
 print("tvi " + str(abs(tvi) - esc));
 print("tvit " + str(abs(tvi)));
 print("days " + str(mars.get(0, 2) / 86400.0));
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_delta_v_map-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_delta_v_map-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
@@ -84,7 +84,7 @@ moi = sprintf("%.2f", val.get(9, 0.0));
 tvi = sprintf("+%.2f (%.2f from LEO)", val.get(10, 0.0), val.get(11, 0.0));
 days = sprintf("Hohmann transfer, %.0f days", val.get(12, 0.0));
 
-d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+d = _lmcode_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
 scene.canvas(1100, 600, "#ffffff");
 scene.text(30.0, 38.0, 22.0, "Delta-v map: what it costs to get there (km/s)", "#1b2733").set_attr("font-weight", "700");
 scene.text(30.0, 62.0, 13.0, "Edge numbers computed by lmspace (Hohmann, vis-viva, patched conics; impulsive burns, no margins).", "#4a5a6a");
@@ -140,7 +140,7 @@ scene.text(318.0, 588.0, 13.0, ${tvi}, "#9467bd");
 scene.text(820.0, 160.0, 13.0, "Read it like a subway map: add the numbers along a route.", "#4a5a6a", 250.0);
 scene.text(820.0, 210.0, 13.0, "LEO to the Moon's surface: 3.13 + 0.82 + 1.73 = 5.7 km/s, more than LEO to GEO.", "#4a5a6a", 250.0);
 scene.render_png("images/delta_v_map.png", 1100, 600, 1);
-end _dsl_
+end _lmcode_
 savedsl(d, "build/viz_delta_v_map-draw.dslb");
 r = system ${dsl_cli(d)} --dsl build/viz_delta_v_map-draw.dslb;
 if (r.code != 0) { println(r.stderr); }

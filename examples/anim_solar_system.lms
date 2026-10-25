@@ -9,7 +9,7 @@
 mkdir("build/examples");
 mkdir("build/rendered");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 # AU and days: mu = k^2 with the Gaussian gravitational constant
 let mu = 0.01720209895 * 0.01720209895;
 let deg = 0.017453292519943295;
@@ -80,7 +80,7 @@ print("opposition " + str(opp) + " retrograde " + str(retro_start) + " " + str(r
 # 13 June 2001 is 529 days after 1 January 2000, 12h
 assert_close(opp, 529.0, 7.0);
 assert_close(retro_end - retro_start, 70.0, 10.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/anim_solar_system-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/anim_solar_system-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
@@ -141,7 +141,7 @@ for (f in range(0, 120)) {
   cx = 500.0 + 360.0 * day / 800.0 + 0.0001;
   label = sprintf("day %d after 1 Jan 2000", day);
   frame = "build/rendered/s" + sprintf("%03d", f) + ".png";
-  d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+  d = _lmcode_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
   scene.canvas(900, 450, "#0b1220");
   scene.text(24.0, 32.0, 18.0, "Inner Solar System (lmspace, Kepler propagation from J2000 elements)", "#e6edf3").set_attr("font-weight", "700");
   scene.text(24.0, 54.0, 13.0, ${label}, "#9fb3c8");
@@ -168,7 +168,7 @@ for (f in range(0, 120)) {
   scene.polyline(${curve}, "#ff6b4a", 2.2);
   scene.circle(${cx}, ${cy}, 4.0, "#ff6b4a");
   scene.render_png(${frame}, 900, 450, 1);
-end _dsl_
+end _lmcode_
   savedsl(d, "build/solar_frame.dslb");
   r = system ${dsl_cli(d)} --dsl build/solar_frame.dslb;
   if (r.code != 0) { println(r.stderr); }

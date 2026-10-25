@@ -7,7 +7,7 @@
 mkdir("build/examples");
 mkdir("build/rendered");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let nu = 0.8726646259971648;
 let el = elements(1.0, 0.6, 0.0, 0.0, 0.0, nu);
 let st = el.to_state(1.0);
@@ -23,7 +23,7 @@ space.system().add(sun).add(here).propagate(0.0, 2, 0.1, "rk45", 0.000000001).sa
 let peri = elements(1.0, 0.6, 0.0, 0.0, 0.0, 0.0).to_state(1.0);
 let walker = space.body("walker", 0.000000000001, peri.position().x(), 0.0, 0.0, 0.0, peri.velocity().y(), 0.0);
 space.system().add(sun).add(walker).propagate(6.283185307179586, 241, 0.01, "rk45", 0.0000000001).save_csv("build/examples/elements_orbit.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_orbit_elements-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_orbit_elements-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
@@ -60,7 +60,7 @@ tl_v = sprintf("v = %.3f", speed);
 tl_vv = sprintf("vis-viva: sqrt(2/r - 1/a) = %.3f", sqrt(2.0 / rr - 1.0));
 tl_nu = "true anomaly 50 deg";
 
-d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+d = _lmcode_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
 scene.canvas(900, 560, "#0f1720");
 scene.text(40.0, 44.0, 24.0, "One orbit, in numbers: a = 1, e = 0.6", "#e6edf3").set_attr("font-weight", "700");
 scene.text(40.0, 72.0, 14.0, "Every length, angle and vector below was computed by lmspace (elements, Cartesian state, RK45 orbit).", "#9fb3c8");
@@ -89,7 +89,7 @@ scene.text(${pxs} + 14.0, ${pys} + 4.0, 13.0, ${tl_r}, "#ff6b6b");
 scene.text(${vxs} + 12.0, ${vys} + 2.0, 13.0, ${tl_v}, "#7bd88f");
 scene.text(${vxs} + 12.0, ${vys} - 14.0, 12.0, ${tl_vv}, "#9fb3c8");
 scene.render_png("build/rendered/orbit_elements.png", 900, 560, 1);
-end _dsl_
+end _lmcode_
 savedsl(d, "build/viz_orbit_elements-draw.dslb");
 r = system ${dsl_cli(d)} --dsl build/viz_orbit_elements-draw.dslb;
 if (r.code != 0) { println(r.stderr); }

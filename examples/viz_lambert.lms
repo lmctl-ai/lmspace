@@ -4,7 +4,7 @@
 # Output: images/lambert.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let q_l1 = lambert(vector(1.0, 0.0, 0.0), vector(-0.5, 1.2, 0.0), 1.2, 1.0, true);
 let sun_l1 = space.body("sun", 1.0);
 let probe_l1 = space.body("probe", 0.000000000001, 1.0, 0.0, 0.0, q_l1.get(0, 0), q_l1.get(0, 1), q_l1.get(0, 2));
@@ -50,12 +50,12 @@ assert_close(o_l5.get(299, 8), 1.2, 0.000001);
 assert_close(o_l5.get(299, 10), q_l5.get(1, 0), 0.000001);
 assert_close(o_l5.get(299, 11), q_l5.get(1, 1), 0.000001);
 o_l5.save_csv("build/examples/lambert_l5.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_lambert-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_lambert-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/lambert.png", 900, 720);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Lambert arcs between two fixed points for five flight times (lmspace)'");
@@ -71,7 +71,7 @@ plot.cmd("set label 1 'start' at 1.04,-0.1");
 plot.cmd("set label 2 'target' at -0.62,1.32");
 plot.cmd("plot 'build/examples/lambert_l1.csv' using 8:9 with lines lw 3 lc rgb '#1f77b4' title 'flight time 1.2', 'build/examples/lambert_l2.csv' using 8:9 with lines lw 3 lc rgb '#2ca02c' title 'flight time 1.8', 'build/examples/lambert_l3.csv' using 8:9 with lines lw 3 lc rgb '#ff7f0e' title 'flight time 2.6', 'build/examples/lambert_l4.csv' using 8:9 with lines lw 3 lc rgb '#d62728' title 'flight time 3.8', 'build/examples/lambert_l5.csv' using 8:9 with lines lw 3 lc rgb '#9467bd' title 'flight time 5.5', 'build/examples/lambert_l1.csv' every ::0::0 using 8:9 with points pt 7 ps 2 lc rgb 'black' notitle, '' every ::299::299 using 8:9 with points pt 9 ps 2 lc rgb 'black' notitle");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/lambert-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/lambert-draw.dslb;
 assert(r.code == 0);

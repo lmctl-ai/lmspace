@@ -8,7 +8,7 @@
 # Output: images/gravity_assist.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 # units: AU, years, G * M_sun = 4 pi^2; 1 AU/yr = 4.7406 km/s
 let kms = 4.740470463533348;
 let mus = 39.47841760435743;
@@ -72,13 +72,13 @@ print("specific orbital energy " + str(ein) + " -> " + str(eout) + " AU^2/yr^2")
 # bound before the flyby, much less bound after it (the host has assert_close only)
 assert_close(min(ein, 0.0), ein, 0.0);
 assert_close(max(eout - ein, 5.0), eout - ein, 0.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_gravity_assist-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_gravity_assist-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/gravity_assist.png", 1200, 820);
 plot.cmd("set datafile separator ','");
 plot.cmd("set multiplot title 'Gravity assist at Jupiter (lmspace, Sun + Jupiter + probe, RK45): v_{inf} = 5.6 km/s, closest approach 6 R_J' font ',15'");
@@ -128,7 +128,7 @@ plot.cmd("set key bottom right box opaque");
 plot.cmd("plot 'build/examples/assist_before.csv' using (-$1):(kms*sqrt(($17-$5)**2+($18-$6)**2)) with lines lw 3 lc rgb '#1f77b4' title 'probe speed', 'build/examples/assist_after.csv' using 1:(kms*sqrt(($17-$5)**2+($18-$6)**2)) with lines lw 3 lc rgb '#d62728' notitle, 'build/examples/assist_before.csv' using (-$1):(kms*sqrt(2*39.47841760435743/sqrt(($14-$2)**2+($15-$3)**2))) with lines dt 2 lw 2 lc rgb 'black' title 'solar escape speed', 'build/examples/assist_after.csv' using 1:(kms*sqrt(2*39.47841760435743/sqrt(($14-$2)**2+($15-$3)**2))) with lines dt 2 lw 2 lc rgb 'black' notitle");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_gravity_assist-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_gravity_assist-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

@@ -1,6 +1,6 @@
 mkdir("build/examples");
 mkdir("images");
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 # Equal-mass circular binary in barycentric, dimensionless G=1 units.
 let a = space.body("primary", 1.0, -0.5, 0.0, 0.0, 0.0, -0.7071067811865475, 0.0);
 let b = space.body("secondary", 1.0, 0.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.0);
@@ -12,12 +12,12 @@ assert_close(out.get(360, 1), -0.5, 0.0000001);
 assert_close(out.get(360, 2), 0.0, 0.0000001);
 assert_close(float(out.cols()), 13.0, 0.0);
 out.save_csv("build/examples/orbit.csv");
-end _dsl_
+end _lmcode_
 savedsl(p, "build/orbit_csv.dslb");
 r = system ${dsl_cli(p)} --dsl build/orbit_csv.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/binary_orbit.png", 800, 720);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Equal-mass circular binary in barycentric units (lmspace, RK45, one period)'");
@@ -28,7 +28,7 @@ plot.cmd("set grid");
 plot.cmd("set key top right box opaque");
 plot.cmd("plot 'build/examples/orbit.csv' using 2:3 with lines lw 3 lc rgb '#1f77b4' title 'primary', '' using 8:9 with lines lw 3 lc rgb '#d62728' dt 2 title 'secondary', 'build/examples/orbit.csv' every ::0::0 using 2:3 with points pt 7 ps 2 lc rgb '#1f77b4' notitle, '' every ::0::0 using 8:9 with points pt 7 ps 2 lc rgb '#d62728' notitle");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/binary_orbit-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/binary_orbit-draw.dslb;
 assert(r.code == 0);

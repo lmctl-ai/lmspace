@@ -83,14 +83,14 @@ Linux downloads require **dynamic glibc >= 2.35** (Ubuntu 22.04 or newer).
 Orbital mechanics and astronomy for lmscript in one executable. Original MIT numerical algorithms provide N-body integration, Kepler propagation, orbital elements, Lambert transfers and Hohmann maneuvers. NASA NAIF CSPICE provides frames and ephemerides from user-supplied kernels.
 
 ```lmscript
-p = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+p = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let orbit = elements(7000.0, 0.1, 0.2, 0.3, 0.4, 0.5);
 let initial = orbit.to_state(mu);
 let transfer = hohmann(7000.0, 42164.0, mu);
 assert_close(period(7000.0, mu), 5828.516637686015, 0.00000001);
 transfer.save_csv("transfer.csv");
-end _dsl_
+end _lmcode_
 savedsl(p, "transfer.dslb");
 system ${dsl_cli(p)} --dsl transfer.dslb;
 ```
@@ -136,7 +136,7 @@ cmake --build build --parallel 4
 ./test.sh
 ```
 
-Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.369`) for the tests. Linux uses dynamic glibc >= 2.35, with CSPICE and the GCC C++ runtimes static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
+Requires C++17, CMake 3.24+, git, Python 3, and lmscript (`npm i -g @lmctl-ai/lmctl@0.2.419`) for the tests. Linux uses dynamic glibc >= 2.35, with CSPICE and the GCC C++ runtimes static; macOS uses only system libraries; Windows statically links MinGW runtimes. Releases contain five platform binaries and the license notices.
 
 `lmspace --version` remains exactly `lmspace X.Y.Z` for installer compatibility.
 The Linux runtime baseline applies to x64 and ARM64; no relink-object archive

@@ -8,7 +8,7 @@
 # Output: images/rendezvous.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let a = 6778.137;
 let n = sqrt(mu / pow(a, 3.0));
@@ -69,14 +69,14 @@ assert_close(worst0, 0.0, 0.01 * 1768.0);
 assert_close(drift1, 0.0 - 6.0 * 3.141592653589793 * dv / n * 1000.0, 0.01 * 16700.0);
 assert_close(drift1, -16670.0, 200.0);
 assert_close(worst1, 0.0, 0.01 * 50000.0);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_rendezvous-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_rendezvous-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/rendezvous.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/rendezvous.png", 1200, 560);
 plot.cmd("set multiplot layout 1,2 title 'A 1 m/s push next to a space station, seen from the station (lmspace Kepler vs Clohessy-Wiltshire)' font ',14'");
 plot.cmd("set grid");
@@ -110,7 +110,7 @@ plot.cmd("set key top left box opaque");
 plot.cmd("plot 'build/examples/rendezvous.txt' index 1 using ($4/1000):($3/1000) with lines lw 3 lc rgb '#1f77b4' title 'exact (lmspace, 3 orbits)', '' index 1 every 12 using ($6/1000):($5/1000) with points pt 6 ps 1.2 lc rgb '#ff7f0e' title 'Clohessy-Wiltshire'");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_rendezvous-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_rendezvous-draw.dslb;
 if (r.code != 0) { println(r.stdout); }

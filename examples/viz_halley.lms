@@ -5,7 +5,7 @@
 # Output: images/halley.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let sun = space.body("sun", 1.0);
 let rp = 0.586;
 let comet = space.body("halley", 0.000000000001, rp, 0.0, 0.0, 0.0, sqrt(1.96714 / rp), 0.0);
@@ -17,12 +17,12 @@ assert_close(out.get(2000, 7), rp, 0.002);
 assert_close(out.get(2000, 8), 0.0, 0.01);
 assert_close(sqrt(out.get(0, 10) * out.get(0, 10) + out.get(0, 11) * out.get(0, 11)) * 29.78, 54.5, 0.1);
 out.save_csv("build/examples/halley.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_halley-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_halley-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/halley.png", 1000, 760);
 plot.cmd("set datafile separator ','");
 plot.cmd("set multiplot layout 2,1");
@@ -51,7 +51,7 @@ plot.cmd("unset key");
 plot.cmd("plot 'build/examples/halley.csv' skip 1 using ($1/6.283185307179586):(29.78*sqrt($11**2+$12**2)) with lines lw 2 lc rgb '#d62728'");
 plot.cmd("unset multiplot");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/viz_halley-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/viz_halley-draw.dslb;
 assert(r.code == 0);

@@ -4,7 +4,7 @@
 # Output: images/figure_eight.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let a = space.body("a", 1.0, -0.97000436, 0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
 let b = space.body("b", 1.0, 0.97000436, -0.24308753, 0.0, 0.46620369, 0.43236573, 0.0);
 let c = space.body("c", 1.0, 0.0, 0.0, 0.0, -0.93240737, -0.86473146, 0.0);
@@ -15,12 +15,12 @@ assert_close(out.get(1200, 2), 0.24308753, 0.000001);
 assert_close(out.get(1200, 7), 0.97000436, 0.000001);
 assert_close(out.get(1200, 13), 0.0, 0.000001);
 out.save_csv("build/examples/figure_eight.csv");
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_figure_eight-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_figure_eight-sim.dslb;
 assert(r.code == 0);
 
-draw = _dsl_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
+draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
 plot.png("images/figure_eight.png", 900, 560);
 plot.cmd("set datafile separator ','");
 plot.cmd("set title 'Figure-eight three-body orbit: three equal masses on one curve (lmspace, RK45)'");
@@ -33,7 +33,7 @@ plot.cmd("set xrange [-1.3:1.3]");
 plot.cmd("set yrange [-0.6:0.6]");
 plot.cmd("plot 'build/examples/figure_eight.csv' using 2:3 with lines lw 3 lc rgb '#1f77b4' title 'body a', '' using 8:9 with lines lw 3 lc rgb '#d62728' dt 2 title 'body b', '' using 14:15 with lines lw 3 lc rgb '#2ca02c' dt 3 title 'body c', 'build/examples/figure_eight.csv' every ::0::0 using 2:3 with points pt 7 ps 2 lc rgb 'black' notitle, '' every ::0::0 using 8:9 with points pt 7 ps 2 lc rgb 'black' notitle, '' every ::0::0 using 14:15 with points pt 7 ps 2 lc rgb 'black' notitle");
 plot.close();
-end _dsl_
+end _lmcode_
 savedsl(draw, "build/figure_eight-draw.dslb");
 r = system ${dsl_cli(draw)} --dsl build/figure_eight-draw.dslb;
 assert(r.code == 0);

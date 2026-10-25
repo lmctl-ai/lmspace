@@ -8,7 +8,7 @@
 # Output: images/ground_tracks.png   (run: lmctl autorun <raw url of this file>)
 mkdir("build/examples");
 mkdir("images");
-sim = _dsl_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
+sim = _lmcode_ cli="lmspace" install="github:lmctl-ai/lmspace@latest";
 let mu = 398600.4418;
 let we = 0.00007292115855;
 let deg = 0.017453292519943295;
@@ -68,7 +68,7 @@ assert_close(iss_max, 51.6, 0.2);
 assert_close(mol_max, 63.4, 0.2);
 assert_close(gps_last, gps_first, 0.1);
 assert_close(mol_north / sidereal, 0.88, 0.06);
-end _dsl_
+end _lmcode_
 savedsl(sim, "build/viz_ground_tracks-sim.dslb");
 r = system ${dsl_cli(sim)} --dsl build/viz_ground_tracks-sim.dslb;
 if (r.code != 0) { println(r.stdout); println(r.stderr); }
@@ -137,7 +137,7 @@ grid = "";
 for (g in range(0, 13)) { gx = X0 + W * g / 12.0; grid = grid + sprintf(" M %.1f,%.1f L %.1f,%.1f", gx, Y0, gx, Y0 + H); }
 for (g in range(0, 7)) { gy = Y0 + H * g / 6.0; grid = grid + sprintf(" M %.1f,%.1f L %.1f,%.1f", X0, gy, X0 + W, gy); }
 
-d = _dsl_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
+d = _lmcode_ cli="lmdraw" install="github:lmctl-ai/lmdraw@latest";
 scene.canvas(1000, 600, "#ffffff");
 scene.text(40.0, 30.0, 20.0, "Ground tracks over one sidereal day (lmspace Kepler propagation, lmdraw map)", "#1b2733").set_attr("font-weight", "700");
 scene.text(40.0, 52.0, 13.0, "ISS and sun-synchronous: two orbits each. Molniya and GPS: one full day; the GPS track closes on itself.", "#4a5a6a");
@@ -165,7 +165,7 @@ scene.legend(40.0, 552.0, "ISS, 51.6 deg, 400 km\nsun-synchronous, 98.2 deg, 700
 scene.legend(420.0, 552.0, "Molniya, 63.4 deg, e = 0.74 (12 h)\nGPS, 55 deg, 20200 km (12 h)", "#d62728,#2ca02c", "#1b2733", "none");
 scene.text(960.0, 590.0, 10.0, "Land: Natural Earth 1:110m (public domain)", "#7a8a9a").set_attr("text-anchor", "end");
 scene.render_png("images/ground_tracks.png", 1000, 600, 1);
-end _dsl_
+end _lmcode_
 savedsl(d, "build/viz_ground_tracks-draw.dslb");
 r = system ${dsl_cli(d)} --dsl build/viz_ground_tracks-draw.dslb;
 if (r.code != 0) { println(r.stderr); }
