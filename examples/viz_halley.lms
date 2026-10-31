@@ -19,7 +19,7 @@ assert_close(sqrt(out.get(0, 10) * out.get(0, 10) + out.get(0, 11) * out.get(0, 
 out.save_csv("build/examples/halley.csv");
 end _lmcode_
 savedsl(sim, "build/viz_halley-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_halley-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_halley-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -53,6 +53,6 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_halley-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_halley-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_halley-draw.dslb;
 assert(r.code == 0);
 println("wrote images/halley.png");

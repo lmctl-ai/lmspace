@@ -41,7 +41,7 @@ for (c in range(0, 6)) {
 }
 end _lmcode_
 savedsl(sim, "build/viz_three_body_zoo-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_three_body_zoo-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_three_body_zoo-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 
@@ -72,7 +72,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_three_body_zoo-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_three_body_zoo-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_three_body_zoo-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/three_body_zoo.png");

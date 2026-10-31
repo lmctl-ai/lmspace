@@ -16,7 +16,7 @@ Physical reference: JPL's [astrodynamic parameters](https://ssd.jpl.nasa.gov/ast
 The README opens with 28 images in `docs/images/` (26 PNG + 2 GIF), grouped by theme (missions and transfers,
 Earth orbits, three bodies, the Solar System). Every image is made by a
 self-contained example: `lmctl autorun <raw url>` in an empty directory runs the computation
-(`system ${dsl_cli(sim)} --dsl ...`), draws with lmplot, lmdraw or lmblender and writes `images/<name>.png` plus scratch files under
+(`system ${dsl_cli(sim)} --lmcode ...`), draws with lmplot, lmdraw or lmblender and writes `images/<name>.png` plus scratch files under
 `build/`. `examples/render-all.sh` runs all of them with `docs/` as the working directory.
 
 | example | picture | story and check |

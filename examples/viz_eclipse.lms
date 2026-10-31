@@ -60,7 +60,7 @@ for (b in range(0, 91)) {
 assert_close(worst, 0.0, 0.003);
 end _lmcode_
 savedsl(sim, "build/viz_eclipse-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_eclipse-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_eclipse-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 
@@ -126,7 +126,7 @@ scene.legend(760.0, 122.0, "ISS, 400 km (92.6 min orbit)\n800 km (100.9 min orbi
 scene.render_png("images/eclipse.png", 1000, 520, 1);
 end _lmcode_
 savedsl(d, "build/viz_eclipse-draw.dslb");
-r = system ${dsl_cli(d)} --dsl build/viz_eclipse-draw.dslb;
+r = system ${dsl_cli(d)} --lmcode build/viz_eclipse-draw.dslb;
 if (r.code != 0) { println(r.stderr); }
 assert(r.code == 0);
 println("wrote images/eclipse.png");

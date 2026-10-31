@@ -59,7 +59,7 @@ let run = space.system().add(earth).add(moon).add(at1).add(at4).propagate(68.0, 
 run.save_csv("build/examples/lagrange.csv");
 end _lmcode_
 savedsl(sim, "build/viz_lagrange-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_lagrange-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_lagrange-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println(r.stdout);
@@ -139,7 +139,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_lagrange-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_lagrange-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_lagrange-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/lagrange.png");

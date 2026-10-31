@@ -25,7 +25,7 @@ let walker = space.body("walker", 0.000000000001, peri.position().x(), 0.0, 0.0,
 space.system().add(sun).add(walker).propagate(6.283185307179586, 241, 0.01, "rk45", 0.0000000001).save_csv("build/examples/elements_orbit.csv");
 end _lmcode_
 savedsl(sim, "build/viz_orbit_elements-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_orbit_elements-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_orbit_elements-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 
@@ -91,7 +91,7 @@ scene.text(${vxs} + 12.0, ${vys} - 14.0, 12.0, ${tl_vv}, "#9fb3c8");
 scene.render_png("build/rendered/orbit_elements.png", 900, 560, 1);
 end _lmcode_
 savedsl(d, "build/viz_orbit_elements-draw.dslb");
-r = system ${dsl_cli(d)} --dsl build/viz_orbit_elements-draw.dslb;
+r = system ${dsl_cli(d)} --lmcode build/viz_orbit_elements-draw.dslb;
 if (r.code != 0) { println(r.stderr); }
 assert(r.code == 0);
 copy_file("build/rendered/orbit_elements.png", "images/orbit_elements.png");

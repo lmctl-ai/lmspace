@@ -7,7 +7,7 @@ import subprocess
 import sys
 root = pathlib.Path(__file__).resolve().parent.parent
 host = sys.argv[1] if len(sys.argv) > 1 else str(root / "build/lmspace")
-lines = subprocess.check_output([host, "--dsl-signatures"], text=True).splitlines()
+lines = subprocess.check_output([host, "--lmcode-signatures"], text=True).splitlines()
 types, functions, context = {}, {}, {}
 pattern = re.compile(r"^(?:fn (\w+)|method (\w+)\.(\w+))\((.*?)\) -> (\w+)$")
 for line in lines:

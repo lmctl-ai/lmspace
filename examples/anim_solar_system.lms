@@ -82,7 +82,7 @@ assert_close(opp, 529.0, 7.0);
 assert_close(retro_end - retro_start, 70.0, 10.0);
 end _lmcode_
 savedsl(sim, "build/anim_solar_system-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/anim_solar_system-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/anim_solar_system-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println(regex_replace(r.stdout, "(day|orbit) [^\n]*\n", "", "g"));
@@ -170,7 +170,7 @@ for (f in range(0, 120)) {
   scene.render_png(${frame}, 900, 450, 1);
 end _lmcode_
   savedsl(d, "build/solar_frame.dslb");
-  r = system ${dsl_cli(d)} --dsl build/solar_frame.dslb;
+  r = system ${dsl_cli(d)} --lmcode build/solar_frame.dslb;
   if (r.code != 0) { println(r.stderr); }
   assert(r.code == 0);
 }

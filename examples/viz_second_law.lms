@@ -21,7 +21,7 @@ dots.save_csv("build/examples/second_law_dots.csv");
 ell.save_csv("build/examples/second_law_orbit.csv");
 end _lmcode_
 savedsl(sim, "build/viz_second_law-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_second_law-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_second_law-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -40,6 +40,6 @@ plot.cmd("plot 'build/examples/second_law_orbit.csv' using 8:9 with lines lw 2 l
 plot.close();
 end _lmcode_
 savedsl(draw, "build/second_law-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/second_law-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/second_law-draw.dslb;
 assert(r.code == 0);
 println("wrote images/second_law.png");

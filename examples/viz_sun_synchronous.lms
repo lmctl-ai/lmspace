@@ -64,7 +64,7 @@ for (k in range(0, 181)) {
 }
 end _lmcode_
 savedsl(sim, "build/viz_sun_synchronous-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_sun_synchronous-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_sun_synchronous-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/sunsync.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
@@ -98,7 +98,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_sun_synchronous-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_sun_synchronous-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_sun_synchronous-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/sun_synchronous.png");

@@ -105,7 +105,7 @@ assert_close(rmin - 1737.4, 100.0, 15.0);
 assert_close(rmax - 1737.4, 100.0, 15.0);
 end _lmcode_
 savedsl(sim, "build/viz_lunar_transfer-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_lunar_transfer-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_lunar_transfer-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 tp = regex_replace(regex_replace(r.stdout, "^.*\ntp ", "", "s"), "\n.*$", "", "s");
@@ -145,7 +145,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_lunar_transfer-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_lunar_transfer-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_lunar_transfer-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/lunar_transfer.png");

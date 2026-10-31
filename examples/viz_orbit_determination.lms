@@ -95,7 +95,7 @@ for (j in range(0, 3)) {
 }
 end _lmcode_
 savedsl(sim, "build/viz_orbit_determination-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_orbit_determination-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_orbit_determination-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/od.txt", regex_replace(r.stdout, "\\{\"ok\".*", ""));
@@ -138,7 +138,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_orbit_determination-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_orbit_determination-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_orbit_determination-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/orbit_determination.png");

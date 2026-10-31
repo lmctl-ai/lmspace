@@ -23,7 +23,7 @@ assert_close(h.get(0, 2), 19000.0, 2000.0);
 out.save_csv("build/examples/hohmann.csv");
 end _lmcode_
 savedsl(sim, "build/viz_hohmann-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_hohmann-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_hohmann-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -46,6 +46,6 @@ plot.cmd("plot 6.378*cos(t), 6.378*sin(t) with filledcurves closed lc rgb '#9eca
 plot.close();
 end _lmcode_
 savedsl(draw, "build/hohmann-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/hohmann-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/hohmann-draw.dslb;
 assert(r.code == 0);
 println("wrote images/hohmann.png");

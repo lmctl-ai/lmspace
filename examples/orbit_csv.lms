@@ -14,7 +14,7 @@ assert_close(float(out.cols()), 13.0, 0.0);
 out.save_csv("build/examples/orbit.csv");
 end _lmcode_
 savedsl(p, "build/orbit_csv.dslb");
-r = system ${dsl_cli(p)} --dsl build/orbit_csv.dslb;
+r = system ${dsl_cli(p)} --lmcode build/orbit_csv.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -30,6 +30,6 @@ plot.cmd("plot 'build/examples/orbit.csv' using 2:3 with lines lw 3 lc rgb '#1f7
 plot.close();
 end _lmcode_
 savedsl(draw, "build/binary_orbit-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/binary_orbit-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/binary_orbit-draw.dslb;
 assert(r.code == 0);
 println("wrote images/binary_orbit.png");

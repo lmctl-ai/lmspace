@@ -17,7 +17,7 @@ assert_close(out.get(1200, 13), 0.0, 0.000001);
 out.save_csv("build/examples/figure_eight.csv");
 end _lmcode_
 savedsl(sim, "build/viz_figure_eight-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_figure_eight-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_figure_eight-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -35,6 +35,6 @@ plot.cmd("plot 'build/examples/figure_eight.csv' using 2:3 with lines lw 3 lc rg
 plot.close();
 end _lmcode_
 savedsl(draw, "build/figure_eight-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/figure_eight-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/figure_eight-draw.dslb;
 assert(r.code == 0);
 println("wrote images/figure_eight.png");

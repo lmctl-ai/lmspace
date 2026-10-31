@@ -34,7 +34,7 @@ assert_close(best, 5.6, 0.5);
 assert_close(best_tof * 58.13, 260.0, 40.0);
 end _lmcode_
 savedsl(sim, "build/viz_porkchop-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_porkchop-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_porkchop-sim.dslb;
 assert(r.code == 0);
 write_file("build/examples/porkchop.txt", r.stdout);
 
@@ -53,6 +53,6 @@ plot.cmd("splot 'build/examples/porkchop.txt' every 1:1:0:0:30:39 using 1:2:3 wi
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_porkchop-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_porkchop-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_porkchop-draw.dslb;
 assert(r.code == 0);
 println("wrote images/porkchop.png");

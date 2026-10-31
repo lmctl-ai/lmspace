@@ -92,10 +92,10 @@ assert_close(period(7000.0, mu), 5828.516637686015, 0.00000001);
 transfer.save_csv("transfer.csv");
 end _lmcode_
 savedsl(p, "transfer.dslb");
-system ${dsl_cli(p)} --dsl transfer.dslb;
+system ${dsl_cli(p)} --lmcode transfer.dslb;
 ```
 
-Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or installs the matching release binary. This is a scripting host: the CLI accepts only `--dsl [FILE ...]`, `--dry-run --dsl ...`, `--version`, `--notices`, `--dsl-schema [--json]` and `--dsl-signatures`. Usage errors exit 2; bytecode load and execution errors exit 3. Dry run verifies bytecode without executing it or writing files.
+Run with `lmscript transfer.lms`. The compiler finds `lmspace` on PATH or installs the matching release binary. This is a scripting host: the CLI accepts only `--lmcode [FILE ...]`, `--dry-run --lmcode ...`, `--version`, `--notices`, `--lmcode-schema [--json]` and `--lmcode-signatures`. Usage errors exit 2; bytecode load and execution errors exit 3. Dry run verifies bytecode without executing it or writing files.
 
 | API | Result |
 | --- | --- |

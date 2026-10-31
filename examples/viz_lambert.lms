@@ -52,7 +52,7 @@ assert_close(o_l5.get(299, 11), q_l5.get(1, 1), 0.000001);
 o_l5.save_csv("build/examples/lambert_l5.csv");
 end _lmcode_
 savedsl(sim, "build/viz_lambert-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_lambert-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_lambert-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -73,6 +73,6 @@ plot.cmd("plot 'build/examples/lambert_l1.csv' using 8:9 with lines lw 3 lc rgb 
 plot.close();
 end _lmcode_
 savedsl(draw, "build/lambert-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/lambert-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/lambert-draw.dslb;
 assert(r.code == 0);
 println("wrote images/lambert.png");

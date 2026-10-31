@@ -65,7 +65,7 @@ print("tvit " + str(abs(tvi)));
 print("days " + str(mars.get(0, 2) / 86400.0));
 end _lmcode_
 savedsl(sim, "build/viz_delta_v_map-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_delta_v_map-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_delta_v_map-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 rows = csv_parse("k v\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, " ");
@@ -142,7 +142,7 @@ scene.text(820.0, 210.0, 13.0, "LEO to the Moon's surface: 3.13 + 0.82 + 1.73 = 
 scene.render_png("images/delta_v_map.png", 1100, 600, 1);
 end _lmcode_
 savedsl(d, "build/viz_delta_v_map-draw.dslb");
-r = system ${dsl_cli(d)} --dsl build/viz_delta_v_map-draw.dslb;
+r = system ${dsl_cli(d)} --lmcode build/viz_delta_v_map-draw.dslb;
 if (r.code != 0) { println(r.stderr); }
 assert(r.code == 0);
 println("wrote images/delta_v_map.png");

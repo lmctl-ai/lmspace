@@ -46,7 +46,7 @@ for (p in range(0, 4)) {
 }
 end _lmcode_
 savedsl(sim, "build/render_solar_system-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/render_solar_system-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/render_solar_system-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 lines = csv_parse("kind|a|b|c\n" + trim(regex_replace(r.stdout, "\\{\"ok\".*", "")), true, "|");
@@ -100,7 +100,7 @@ scene.render_settings(6, 0, true);
 scene.render_png("images/solar_system_3d.png", 160, 1000, 560);
 end _lmcode_
 savedsl(b, "build/render_solar_system-render.dslb");
-r = system ${dsl_cli(b)} --dsl build/render_solar_system-render.dslb;
+r = system ${dsl_cli(b)} --lmcode build/render_solar_system-render.dslb;
 if (r.code != 0) { println(r.stdout); println(r.stderr); }
 assert(r.code == 0);
 println("wrote images/solar_system_3d.png");

@@ -74,7 +74,7 @@ assert_close(min(ein, 0.0), ein, 0.0);
 assert_close(max(eout - ein, 5.0), eout - ein, 0.0);
 end _lmcode_
 savedsl(sim, "build/viz_gravity_assist-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_gravity_assist-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_gravity_assist-sim.dslb;
 println(r.stdout);
 assert(r.code == 0);
 
@@ -130,7 +130,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_gravity_assist-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_gravity_assist-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_gravity_assist-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/gravity_assist.png");

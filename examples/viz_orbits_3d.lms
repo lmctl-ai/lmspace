@@ -36,7 +36,7 @@ assert_close(o_o4.get(299, 7), o_o4.get(0, 7), 0.01);
 o_o4.save_csv("build/examples/orbit3d_o4.csv");
 end _lmcode_
 savedsl(sim, "build/viz_orbits_3d-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_orbits_3d-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_orbits_3d-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -62,6 +62,6 @@ plot.cmd("splot 6.378*cos(u)*cos(v), 6.378*sin(u)*cos(v), 6.378*sin(v) with line
 plot.close();
 end _lmcode_
 savedsl(draw, "build/orbits_3d-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/orbits_3d-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/orbits_3d-draw.dslb;
 assert(r.code == 0);
 println("wrote images/orbits_3d.png");

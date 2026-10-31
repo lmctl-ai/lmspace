@@ -31,6 +31,7 @@ if [ ! -f "$BUILD_DIR/CMakeCache.txt" ] && command -v ninja >/dev/null 2>&1; the
 cmake -S . -B "$BUILD_DIR" $GEN -DCMAKE_BUILD_TYPE=Release >/dev/null
 cmake --build "$BUILD_DIR" --parallel "${BUILD_JOBS:-4}" >"$WORK/build.log" 2>&1 || { tail -40 "$WORK/build.log" >&2; fail "build"; }
 ok "build"
+python3 tests/check-host-flags.py schema/lmspace.dsl.json "$HOST" || fail "hard host flag cutover"
 ctest --test-dir "$BUILD_DIR" --output-on-failure || fail "native physics tests"
 ok "native physics regression tests"
 # Produce an original user-kernel fixture at runtime for the DSL ephemeris test.
@@ -42,26 +43,26 @@ ok "--version prints exactly '$want_version'"
 cp schema/lmspace.host.json "$WORK/schema.before"
 python3 scripts/gen-schema.py "$HOST" >/dev/null && cmp -s "$WORK/schema.before" schema/lmspace.host.json || fail "schema/lmspace.host.json is stale: run scripts/gen-schema.py"
 ok "schema matches the registrations in cpp/main.cpp"
-"$HOST" --dsl-schema --json >"$WORK/schema.json" || fail "embedded schema print"
+"$HOST" --lmcode-schema --json >"$WORK/schema.json" || fail "embedded schema print"
 cmp -s "$WORK/schema.json" schema/lmspace.dsl.json || fail "embedded schema differs from schema/lmspace.dsl.json"
-ok "--dsl-schema --json prints byte-identical embedded schema bytes"
-diff -u <("$LMSCRIPT" --dsl-signatures schema/lmspace.dsl.json) <("$HOST" --dsl-signatures) || fail "host/compiler signatures differ"
+ok "--lmcode-schema --json prints byte-identical embedded schema bytes"
+diff -u <("$LMSCRIPT" --lmcode-signatures schema/lmspace.dsl.json) <("$HOST" --lmcode-signatures) || fail "host/compiler signatures differ"
 ok "host registry matches compiler signatures"
 cmp schema/lmspace.host.json schema/lmspace.dsl.json || fail "generated schema differs from host-only input"
 python3 scripts/merge-std.py --host-only schema/lmspace.dsl.json "$WORK/host-only-schema.json"
 cmp schema/lmspace.dsl.json "$WORK/host-only-schema.json" || fail "embedded schema still declares standard members"
-"$HOST" --dsl-signatures >"$WORK/registry-signatures.txt"
-"$LMSCRIPT" --dsl-signatures cpp/std/lmcode-std.schema.json >"$WORK/standard-signatures.txt"
+"$HOST" --lmcode-signatures >"$WORK/registry-signatures.txt"
+"$LMSCRIPT" --lmcode-signatures cpp/std/lmcode-std.schema.json >"$WORK/standard-signatures.txt"
 python3 - "$WORK" <<'PYHOST'
 from pathlib import Path
 import sys
 work=Path(sys.argv[1])
 registry=set((work/'registry-signatures.txt').read_text().splitlines())
 standard=set((work/'standard-signatures.txt').read_text().splitlines())
-assert len(standard)==72, len(standard)
+assert len(standard)==206, len(standard)
 (work/'host-signatures.txt').write_bytes(''.join(line+'\n' for line in sorted(registry-standard)).encode('utf-8'))
 PYHOST
-diff -u <("$LMSCRIPT" --dsl-signatures schema/lmspace.dsl.json --without-std) "$WORK/host-signatures.txt" || fail "host-only registry/compiler signatures differ"
+diff -u <("$LMSCRIPT" --lmcode-signatures schema/lmspace.dsl.json --without-std) "$WORK/host-signatures.txt" || fail "host-only registry/compiler signatures differ"
 ok "host-only schema bytes and --without-std parity retain domain and testing declarations"
 "$HOST" --notices | grep -q "NAIF" || fail "--notices missing third-party text"
 "$HOST" --notices | grep -q "Lucent Technologies" || fail "--notices missing the libf2c notice"
@@ -89,11 +90,11 @@ n=0
 for src in tests/*.lms; do
   name="$(basename "$src" .lms)"
   "$LMSCRIPT" "$src" "build/$name.dslb" >"$WORK/$name.log" 2>&1 || { cat "$WORK/$name.log" >&2; fail "$name compile"; }
-  "$HOST" --dsl "build/$name.dslb" >"$WORK/$name.out" 2>"$WORK/$name.err" || { cat "$WORK/$name.out" "$WORK/$name.err" >&2; fail "$name run"; }
+  "$HOST" --lmcode "build/$name.dslb" >"$WORK/$name.out" 2>"$WORK/$name.err" || { cat "$WORK/$name.out" "$WORK/$name.err" >&2; fail "$name run"; }
   grep -q '"ok": true' "$WORK/$name.out" || { cat "$WORK/$name.out" >&2; fail "$name did not report ok"; }
   n=$((n+1))
 done
-ok "$n test programs compile as bytecode v5, run and pass their own assertions"
+ok "$n test programs compile as bytecode v6, run and pass their own assertions"
 
 # Gallery: every image the README references exists and is a valid PNG/GIF; every linked example exists.
 img_ok() { # file
@@ -152,7 +153,7 @@ end _dsl_
 savedsl(p, "$WORK/$1.dslb");
 LMS
   "$LMSCRIPT" "$WORK/$1.lms" >/dev/null 2>"$WORK/$1.cerr" || { cat "$WORK/$1.cerr" >&2; fail "$1 compile"; }
-  set +e; out="$("$HOST" --dsl "$WORK/$1.dslb" 2>/dev/null)"; code=$?; set -e
+  set +e; out="$("$HOST" --lmcode "$WORK/$1.dslb" 2>/dev/null)"; code=$?; set -e
   [ "$code" = 3 ] || fail "$1: exit code $code, expected 3 ($out)"
   echo "$out" | grep -q "$3" || fail "$1: message lacks '$3': $out"
 }
@@ -196,7 +197,7 @@ end _dsl_
 savedsl(p, "$WORK/drift.dslb");
 LMS
 "$LMSCRIPT" "$WORK/drift.lms" >/dev/null 2>"$WORK/drift.cerr" || { cat "$WORK/drift.cerr" >&2; fail "drift compile"; }
-"$HOST" --dsl "$WORK/drift.dslb" >"$WORK/drift.out" 2>"$WORK/drift.err" || { cat "$WORK/drift.out" "$WORK/drift.err" >&2; fail "drift run"; }
+"$HOST" --lmcode "$WORK/drift.dslb" >"$WORK/drift.out" 2>"$WORK/drift.err" || { cat "$WORK/drift.out" "$WORK/drift.err" >&2; fail "drift run"; }
 [ "$(grep -c 'lmspace: warning: symplectic propagation changed the system energy' "$WORK/drift.err")" = 1 ] \
   || { cat "$WORK/drift.err" >&2; fail "close encounter: expected exactly one energy-drift warning"; }
 awk '$1 == "coarse" { exit !($2 > 0.001) }' "$WORK/drift.out" || fail "close encounter: energy_drift() too small: $(cat "$WORK/drift.out")"
@@ -222,14 +223,14 @@ end _dsl_
 savedsl(p, "$WORK/runaway.dslb");
 LMS
 "$LMSCRIPT" "$WORK/runaway.lms" >/dev/null || fail "runaway.lms compile"
-set +e; out="$(LMSPACE_MAX_MEMORY_MB=64 "$HOST" --dsl "$WORK/runaway.dslb" 2>"$WORK/runaway.err")"; code=$?; set -e
+set +e; out="$(LMSPACE_MAX_MEMORY_MB=64 "$HOST" --lmcode "$WORK/runaway.dslb" 2>"$WORK/runaway.err")"; code=$?; set -e
 [ "$code" = 3 ] || fail "runaway loop under LMSPACE_MAX_MEMORY_MB=64: exit $code, expected 3 ($out)"
 echo "$out" | grep -q "memory budget exceeded" || fail "runaway loop: JSON lacks the budget message: $out"
 grep -q "LMSPACE_MAX_MEMORY_MB" "$WORK/runaway.err" || fail "runaway loop: no budget message on stderr"
-set +e; LMSPACE_MAX_MEMORY_MB=-5 "$HOST" --dsl "$WORK/runaway.dslb" >/dev/null 2>"$WORK/badenv.err"; code=$?; set -e
+set +e; LMSPACE_MAX_MEMORY_MB=-5 "$HOST" --lmcode "$WORK/runaway.dslb" >/dev/null 2>"$WORK/badenv.err"; code=$?; set -e
 [ "$code" = 2 ] && grep -q "positive whole number" "$WORK/badenv.err" || fail "bad LMSPACE_MAX_MEMORY_MB: exit $code"
 if [ "$UNAME_S" = Linux ]; then
-  set +e; out="$(ulimit -v 6291456; "$HOST" --dsl "$WORK/runaway.dslb" 2>/dev/null)"; code=$?; set -e
+  set +e; out="$(ulimit -v 6291456; "$HOST" --lmcode "$WORK/runaway.dslb" 2>/dev/null)"; code=$?; set -e
   [ "$code" = 3 ] && echo "$out" | grep -q "limit 4096 MiB" || fail "runaway loop with the default budget under ulimit -v 6 GiB: exit $code ($out)"
   ok "memory budget: runaway loop stops at 64 MiB and at the default 4096 MiB (under ulimit -v 6 GiB)"
 else
@@ -245,13 +246,13 @@ end _dsl_
 savedsl(p, "$WORK/dry.dslb");
 LMS
 "$LMSCRIPT" "$WORK/dry.lms" >/dev/null 2>&1 || fail "dry-run program compile"
-"$HOST" --dry-run --dsl "$WORK/dry.dslb" >"$WORK/dry.out" || fail "dry run"
+"$HOST" --dry-run --lmcode "$WORK/dry.dslb" >"$WORK/dry.out" || fail "dry run"
 [ ! -e "$WORK/dry.csv" ] || fail "dry run created CSV"
-"$HOST" --dsl "$WORK/dry.dslb" >/dev/null || fail "dry program run"
+"$HOST" --lmcode "$WORK/dry.dslb" >/dev/null || fail "dry program run"
 [ -s "$WORK/dry.csv" ] || fail "real run wrote no CSV"
 ok "dry run verifies without writing outputs"
 
-for flags in '--unknown' '--version extra' '--dsl-schema --bogus' '--dry-run' '--dsl --bogus'; do
+for flags in '--unknown' '--version extra' '--lmcode-schema --bogus' '--dry-run' '--lmcode --bogus'; do
   set +e
   # Deliberate word splitting: each fixed test string is a CLI argument sequence.
   # shellcheck disable=SC2086
@@ -262,7 +263,7 @@ for flags in '--unknown' '--version extra' '--dsl-schema --bogus' '--dry-run' '-
 done
 ok "invalid CLI combinations use exit 2"
 
-set +e; "$HOST" --dsl "$WORK/does-not-exist.dslb" >/dev/null 2>&1; code=$?; set -e
+set +e; "$HOST" --lmcode "$WORK/does-not-exist.dslb" >/dev/null 2>&1; code=$?; set -e
 [ "$code" = 3 ] || fail "missing bytecode exit code $code, expected 3"
 set +e; "$HOST" >/dev/null 2>&1; code=$?; set -e
 [ "$code" = 2 ] || fail "usage exit code $code, expected 2"

@@ -24,7 +24,7 @@ o_e4.save_csv("build/examples/energy_e4.csv");
 assert_close(sqrt(1.0), 1.0, 0.0);
 end _lmcode_
 savedsl(sim, "build/viz_energy_error-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_energy_error-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_energy_error-sim.dslb;
 assert(r.code == 0);
 
 draw = _lmcode_ cli="lmplot" install="github:lmctl-ai/lmplot@latest";
@@ -44,6 +44,6 @@ plot.cmd("plot 'build/examples/energy_e1.csv' using 1:(abs(0.5*($11**2+$12**2)-1
 plot.close();
 end _lmcode_
 savedsl(draw, "build/energy_error-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/energy_error-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/energy_error-draw.dslb;
 assert(r.code == 0);
 println("wrote images/energy_error.png");

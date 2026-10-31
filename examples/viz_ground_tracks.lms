@@ -70,7 +70,7 @@ assert_close(gps_last, gps_first, 0.1);
 assert_close(mol_north / sidereal, 0.88, 0.06);
 end _lmcode_
 savedsl(sim, "build/viz_ground_tracks-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_ground_tracks-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_ground_tracks-sim.dslb;
 if (r.code != 0) { println(r.stdout); println(r.stderr); }
 assert(r.code == 0);
 
@@ -167,7 +167,7 @@ scene.text(960.0, 590.0, 10.0, "Land: Natural Earth 1:110m (public domain)", "#7
 scene.render_png("images/ground_tracks.png", 1000, 600, 1);
 end _lmcode_
 savedsl(d, "build/viz_ground_tracks-draw.dslb");
-r = system ${dsl_cli(d)} --dsl build/viz_ground_tracks-draw.dslb;
+r = system ${dsl_cli(d)} --lmcode build/viz_ground_tracks-draw.dslb;
 if (r.code != 0) { println(r.stderr); }
 assert(r.code == 0);
 println("wrote images/ground_tracks.png");

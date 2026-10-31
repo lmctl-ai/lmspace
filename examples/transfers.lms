@@ -20,7 +20,7 @@ for (k in range(0, 60)) {
 }
 end _lmcode_
 savedsl(p, "build/transfers.dslb");
-r = system ${dsl_cli(p)} --dsl build/transfers.dslb;
+r = system ${dsl_cli(p)} --lmcode build/transfers.dslb;
 assert(r.code == 0);
 rows = r.stdout;
 
@@ -41,6 +41,6 @@ plot.cmd("plot $rows every ::0::59 using 1:2 with lines lw 3 lc rgb '#1f77b4' ti
 plot.close();
 end _lmcode_
 savedsl(draw, "build/hohmann_sweep-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/hohmann_sweep-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/hohmann_sweep-draw.dslb;
 assert(r.code == 0);
 println("wrote images/hohmann_sweep.png");

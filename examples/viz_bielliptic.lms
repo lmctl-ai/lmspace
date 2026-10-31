@@ -40,7 +40,7 @@ assert_close(clamp((abs(h14.get(0, 0)) + abs(h14.get(0, 1)) - bi14) * 100000.0, 
 assert_close(abs(h10.get(0, 0)) + abs(h10.get(0, 1)), 0.5298, 0.0005);
 end _lmcode_
 savedsl(sim, "build/viz_bielliptic-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_bielliptic-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_bielliptic-sim.dslb;
 if (r.code != 0) { println(r.stderr); println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/bielliptic.txt", r.stdout);
@@ -63,6 +63,6 @@ plot.cmd("plot 'build/examples/bielliptic.txt' every ::0::95 using 1:2 with line
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_bielliptic-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_bielliptic-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_bielliptic-draw.dslb;
 assert(r.code == 0);
 println("wrote images/bielliptic.png");

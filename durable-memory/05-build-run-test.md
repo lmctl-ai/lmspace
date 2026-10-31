@@ -13,3 +13,7 @@ Build: `scripts/sync-deps.sh`, then `cmake -S . -B build` and `cmake --build bui
 CSV values use 17 significant digits; deterministic reruns are compared within a platform, not across different libm implementations. Numerical assertions use physical tolerances. Limits bound output cells, body count and integration work; large or unresolved close encounters can stop with a clear host error.
 
 Local v0.1.3 rollout validation: 20 checks passed, including both native suites, all 28 gallery examples and 41 byte-identical output files on rerun. The built Linux x64 binary is 2,824,808 bytes, needs libm.so.6, libc.so.6 and ld-linux-x86-64.so.2, and has maximum GLIBC_2.34. Three extra README runs (lunar transfer, gravity assist, porkchop) passed in fresh directories with the candidate and released lmplot v0.2.1.
+
+## Native host flag contract
+
+The host accepts only the lmcode option family, with no retired aliases. The full gate checks exact schema/signature output, new loader routing and rejection before file effects in scratch HOME. SDK20325f7 is synchronized through the owner script for actual source-compiler v6 capabilities; package metadata alone is insufficient. Internal DSLB and .dslb names remain.

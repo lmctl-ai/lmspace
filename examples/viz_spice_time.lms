@@ -61,7 +61,7 @@ let ecl = space.frame("J2000", "ECLIPJ2000", 0.0);
 assert_close(ecl.get(2, 2), cos(23.4392911 * 0.017453292519943295), 0.0000001);
 end _lmcode_
 savedsl(sim, "build/viz_spice_time-sim.dslb");
-r = system ${dsl_cli(sim)} --dsl build/viz_spice_time-sim.dslb;
+r = system ${dsl_cli(sim)} --lmcode build/viz_spice_time-sim.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 write_file("build/examples/leap.txt", regex_replace(regex_replace(r.stdout, "gst [^\n]*\n", "", "g"), "\\{\"ok\".*", ""));
@@ -95,7 +95,7 @@ plot.cmd("unset multiplot");
 plot.close();
 end _lmcode_
 savedsl(draw, "build/viz_spice_time-draw.dslb");
-r = system ${dsl_cli(draw)} --dsl build/viz_spice_time-draw.dslb;
+r = system ${dsl_cli(draw)} --lmcode build/viz_spice_time-draw.dslb;
 if (r.code != 0) { println(r.stdout); }
 assert(r.code == 0);
 println("wrote images/spice_time.png");
